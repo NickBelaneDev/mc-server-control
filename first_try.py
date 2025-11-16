@@ -4,7 +4,14 @@ print("--- Python-Skript startet ---")
 
 # Wir definieren den Befehl, den wir ausführen wollen.
 # WICHTIG: Wir übergeben ihn als Liste von Strings.
-befehl = ["ls"]
 
-subprocess.run(befehl)
+def check_pwd() -> str:
+    befehl = ["pwd"]
+    result = subprocess.run(
+        befehl,
+        capture_output=True,
+        text=True)
+    return result.stdout
+
+
 print("--- Python-Skript beendet ---\n")
