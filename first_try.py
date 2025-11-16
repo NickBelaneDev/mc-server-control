@@ -5,18 +5,16 @@ print("--- Python-Skript startet ---\n")
 # Wir definieren den Befehl, den wir ausführen wollen.
 # WICHTIG: Wir übergeben ihn als Liste von Strings.
 
-def check_pwd() -> str:
+def check_pwd():
     befehl = ["pwd"]
 
+    _result = subprocess.run(
+        befehl,
+        capture_output=True,
+        text=True)
+    return _result
 
-    try:
-        result = subprocess.run(
-            befehl,
-            capture_output=True,
-            text=True)
-        return result.stdout
-    except Exception as e:
-        return result.stderr
-
-print(check_pwd())
-print("--- Python-Skript beendet ---\n")
+result = check_pwd()
+print(f"{result.stderr=}")
+print(f"{result.stdout=}")
+print("\n--- Python-Skript beendet ---")
