@@ -7,11 +7,16 @@ print("--- Python-Skript startet ---\n")
 
 def check_pwd() -> str:
     befehl = ["pwd"]
-    result = subprocess.run(
-        befehl,
-        capture_output=True,
-        text=True)
-    return result.stdout
+
+
+    try:
+        result = subprocess.run(
+            befehl,
+            capture_output=True,
+            text=True)
+        return result.stdout
+    except Exception as e:
+        return result.stderr
 
 print(check_pwd())
 print("--- Python-Skript beendet ---\n")
