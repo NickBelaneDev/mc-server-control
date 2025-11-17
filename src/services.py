@@ -33,7 +33,6 @@ def _build_command_model(min_gb: int, max_gb: int, file: str) -> CommandModel:
                                                     max_gb=max_gb,
                                                     file=file))
 
-
 def _build_target_model(target_dir: str) -> TargetModel:
     return TargetModel(dir=target_dir)
 
