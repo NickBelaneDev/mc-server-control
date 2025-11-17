@@ -1,69 +1,73 @@
 import subprocess
-from models import CommandModel, RunCommand, TargetModel, StartCommand
+from models import CommandsModel, RunCommand
+from src.config_loader import load_config
 
+config = load_config()
 
-
-def _run(command: list[str], target=None):
-    if target:
-        result = subprocess.run(command,
-                                capture_output=True,
-                                text=True,
-                                cwd=target)
-
-    else:
-        result = subprocess.run(command,
-                                capture_output=True,
-                                text=True)
-
-    return result
-
-def _start_command(min_gb: int, max_gb: int, file: str) -> list:
+def _compose_server_start_command() -> list:
     """Returns a String of the start command for a server."""
-    start_cmd_mdl = StartCommand(min_gb=min_gb,
-                                 max_gb=max_gb,
-                                 file_name=file)
-    return ["java",
-            f"-Xms{start_cmd_mdl.min_gb}G",
-            f"-Xmx{start_cmd_mdl.max_gb}G",
-            "-jar",
-            start_cmd_mdl.file_name]
+    return ["screen",
+            "-dmS", config.screen_name,
+            "java",
+            *config.java_command]
 
-def _build_command_model(min_gb: int, max_gb: int, file: str) -> CommandModel:
-     return CommandModel(commands=_start_command(min_gb=min_gb,
-                                                    max_gb=max_gb,
-                                                    file=file))
+def _run(commands: list[str], target=config.dir) -> str|None:
+    try:
+        if target:
+            result = subprocess.run(commands,
+                                    capture_output=True,
+                                    text=True,
+                                    cwd=target,
+                                    check=True)
 
-def _build_target_model(target_dir: str) -> TargetModel:
-    return TargetModel(dir=target_dir)
+        else:
+            result = subprocess.run(commands,
+                                    capture_output=True,
+                                    text=True,
+                                    check=True)
 
-def _build_run_command(command_model: CommandModel, targe_model: TargetModel) -> RunCommand:
-    return RunCommand(command_model=command_model, target=targe_model)
+        return result.stdout
 
+    except subprocess.CalledProcessError as e:
+        print(" --- Command Failed!! ---")
+        print(f"Command: {e.cmd}")
+        print(f"Returncode: {e.returncode}")
+        print(f"stdout: {e.stdout}")
+        print(f"stderr: {e.stderr}")
+        raise e
+
+    except FileNotFoundError as e:
+        print(" --- Command Failed!! ---")
+        print(f"Error: FileNotFound {commands[-1]}")
+        raise e
 
 class MinecraftServerController:
-    def __init__(self, folder: str):
-        self.target = TargetModel(dir=folder)
+    def __init__(self):
+        self.target = config.dir
+        self.min_gb = config.min_gb
+        self.max_gb = config.max_gb
+        self.jar = config.jar
+        self.screen_name = config.screen_name
 
-    def start(self, min_gb: int, max_gb: int, file: str):
+    def start(self):
         """
-
-        :param min_gb: Minimum RAM
-        :param max_gb: Maximum RAM
-        :param file: server file name e.g. 'server.jar' or 'paper.jar'
-        :return:
+        Starts the Minecraft Server
         """
-        cmd_mdl = _build_command_model(min_gb=min_gb,
-                             max_gb=max_gb,
-                             file=file)
+        server_start_command = _compose_server_start_command()
 
-        print(cmd_mdl.commands)
-        _run(cmd_mdl.commands, self.target.dir)
+        try:
+            _run(server_start_command, self.target)
+        except Exception as e:
+            print("Could not Start the server! Check your 'config.toml' values?")
+            print(e)
+            raise e
 
     def stop(self):
         """Stops the minecraft server"""
-        _run(["stop"], self.target.dir)
-        raise NotImplementedError
+        _run(["stop"], self.target)
+
+
 
 if __name__ == "__main__":
-    server_controller = MinecraftServerController("/mc/server-1-21-10")
-    server_controller.start(4, 6, "paper.jar")
+    server_controller = MinecraftServerController()
+    server_controller.start()

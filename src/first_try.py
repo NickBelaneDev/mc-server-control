@@ -1,5 +1,7 @@
 import subprocess
 from pydantic import BaseModel
+
+
 print("--- Python-Skript startet ---\n")
 
 # Wir definieren den Befehl, den wir ausführen wollen.
@@ -27,4 +29,13 @@ def _run(command: list[str], target: str):
 
     print("--- Python-Skript beendet ---")
 
-_run(["ls", "-l"], "/mc/server-1-21-10")
+#_run(["ls", "-l"], "/mc/server-1-21-10")
+"""
+Das '*' vor einer Liste lässt holt alle values raus, perfekt um zwei Listen zusammenzufügen.
+
+test_list = ["Abc", 1, "312", 5, "ne wat schön"]
+outer_list = ["Wat", "wer", *test_list]
+print(outer_list)
+
+"""
+
