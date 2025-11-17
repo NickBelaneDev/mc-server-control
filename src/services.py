@@ -1,6 +1,6 @@
 import subprocess
-from models import CommandModel, RunCommand, TargetModel
-from src.models import StartCommand
+from models import CommandModel, RunCommand, TargetModel, StartCommand
+
 
 
 def _run(command: list[str], target=None):
