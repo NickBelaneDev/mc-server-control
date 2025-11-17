@@ -2,7 +2,7 @@ import tomli
 
 from pydantic import ValidationError
 
-from config_models import ServerConfig
+from .config_models import ServerConfig
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
