@@ -1,4 +1,4 @@
-import tomllib
+import tomli
 
 from pydantic import ValidationError
 
@@ -22,7 +22,7 @@ def load_config() -> ServerConfig:
         raise FileNotFoundError(f"Config file not found: {CONFIG_PATH}")
 
     with CONFIG_PATH.open("rb") as f:
-        raw = tomllib.load(f)
+        raw = tomli.load(f)
 
     try:
         _CONFIG_CACHE = ServerConfig(**raw["mc"])
