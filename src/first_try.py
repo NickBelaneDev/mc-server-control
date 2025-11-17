@@ -1,18 +1,20 @@
 import subprocess
-
+from pydantic import BaseModel
 print("--- Python-Skript startet ---\n")
 
 # Wir definieren den Befehl, den wir ausführen wollen.
 # WICHTIG: Wir übergeben ihn als Liste von Strings.
 
+class RunCommand(BaseModel):
+    pass
+
 def _run(command: list[str], target: str):
-    befehl = command
-    ziel_ordner = target
+
     # Führe den Befehl aus UND fange die Ausgabe in der 'result'-Variable
-    result = subprocess.run(befehl,
+    result = subprocess.run(command,
                             capture_output=True,
                             text=True,
-                            cwd=ziel_ordner)
+                            cwd=target)
 
     # Jetzt gehört die Ausgabe uns!
     print("--- Python hat die Ausgabe gefangen ---")
