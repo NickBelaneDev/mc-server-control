@@ -7,7 +7,6 @@ def _compose_server_start_command() -> list:
     """Returns a String of the start command for a server."""
     return ["screen",
             "-dmS", config.screen_name,
-            "java",
             *config.java_command]
 
 def _run(commands: list[str], target=config.dir) -> str|None:
