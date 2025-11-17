@@ -23,10 +23,10 @@ def _start_command(min_gb: int, max_gb: int, file: str) -> list:
                                  max_gb=max_gb,
                                  file_name=file)
     return ["java",
-            f"Xms{start_cmd_mdl.min_gb}",
-            f"Xmx{start_cmd_mdl.max_gb}",
+            f"-Xms{start_cmd_mdl.min_gb}G",
+            f"-Xmx{start_cmd_mdl.max_gb}G",
             "-jar",
-            f"{start_cmd_mdl.file_name}"]
+            start_cmd_mdl.file_name]
 
 def _build_command_model(min_gb: int, max_gb: int, file: str) -> CommandModel:
      return CommandModel(commands=_start_command(min_gb=min_gb,
@@ -66,5 +66,5 @@ class MinecraftServerController:
         raise NotImplementedError
 
 if __name__ == "__main__":
-    server_controller = MinecraftServerController("/root/mc/server-1-21-10")
+    server_controller = MinecraftServerController("/mc/server-1-21-10")
     server_controller.start(4, 6, "paper.jar")
