@@ -31,8 +31,3 @@ class StartCommand(BaseModel):
 
     def __str__(self):
         return f"java -Xms{self.min_gb}G -Xmx{self.max_gb}G -jar {self.file_name}"
-
-s_c = StartCommand(max_gb=4,
-                   min_gb=7,
-                   file_name="lkk.jar")
-print(str(s_c))

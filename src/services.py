@@ -62,5 +62,5 @@ class MinecraftServerController:
         raise NotImplementedError
 
 if __name__ == "__main__":
-    server_controller = MinecraftServerController("/mc/server-1-21-10")
+    server_controller = MinecraftServerController("root/mc/server-1-21-10")
     server_controller.start(4, 6, "paper.jar")
