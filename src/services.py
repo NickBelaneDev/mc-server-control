@@ -54,6 +54,7 @@ class MinecraftServerController:
         """
         server_start_command = _compose_server_start_command()
         print(">> Launching the server...")
+        print(f"- server_start_command = {server_start_command}")
         try:
             _run(server_start_command, self.target)
         except Exception as e:
