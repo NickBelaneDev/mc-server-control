@@ -54,17 +54,20 @@ class MinecraftServerController:
         Starts the Minecraft Server
         """
         server_start_command = _compose_server_start_command()
-
+        print(">> Launching the server...")
         try:
             _run(server_start_command, self.target)
         except Exception as e:
             print("Could not Start the server! Check your 'config.toml' values?")
             print(e)
             raise e
+        print("Server is running...!")
 
     def stop(self):
         """Stops the minecraft server"""
+        print(">> Stopping the server...")
         _run(["stop"], self.target)
+        print("Server stopped!")
 
 
 
