@@ -54,7 +54,7 @@ class MinecraftServerController:
         """Starts the Minecraft Server"""
         server_start_command = self._compose_server_start_command()
         logger.info(">> Launching the server...")
-        logger.info(f"- server_start_command = {" ".join(server_start_command)}")
+        #logger.info(f"- server_start_command = {" ".join(server_start_command)}")
         try:
             _run(server_start_command, self.target)
         except Exception as e:
