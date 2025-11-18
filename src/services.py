@@ -5,6 +5,7 @@ from .config_models import ServerConfig
 import logging
 logger = logging.getLogger(__name__)
 
+
 def _run(commands: list[str], target=None) -> str|None:
     try:
         if target:
