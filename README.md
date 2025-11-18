@@ -11,8 +11,8 @@ perform basic operations as well as to monitor the server-stats.
 Open the config.toml and paste all your server information needed.
 
 Let's say:
-    `config = load_config()`
-    `msc = MinecraftServerController(config)`
-    `msc.start()`
+    `config = load_config()`\n
+    `msc = MinecraftServerController(config)`\n
+    `msc.start()`\n
     `msc.stop()`
     
