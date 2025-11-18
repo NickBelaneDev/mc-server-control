@@ -4,8 +4,11 @@ from pydantic import (BaseModel,
                       field_validator)
 
 from pathlib import Path
+import logging
+logger = logging.getLogger(__name__)
 
 class ServerConfig(BaseModel):
+    """Holds the data of the config.toml."""
     dir: str
     jar: str
     min_gb: int = Field(..., ge=1, le=12)  #
@@ -16,8 +19,7 @@ class ServerConfig(BaseModel):
     def ensure_order(self):
         if self.min_gb > self.max_gb:
             self.min_gb, self.max_gb = self.max_gb, self.min_gb
-            print(f"ALERT: 'min_gb' > 'max_gb', check your 'config.toml'!")
-            print("Auto correcting the order...")
+            logger.warning(f"ALERT: 'min_gb' > 'max_gb', check your 'config.toml'! Auto-correcting the order...")
         return self
 
     @field_validator("jar")

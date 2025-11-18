@@ -1,15 +1,11 @@
 import subprocess
-from src.config_loader import load_config
 
-config = load_config()
+from .config_loader import load_config
+from .config_models import ServerConfig
+import logging
+logger = logging.getLogger(__name__)
 
-def _compose_server_start_command() -> list:
-    """Returns a String of the start command for a server."""
-    return ["screen",
-            "-dmS", config.screen_name,
-            *config.java_command]
-
-def _run(commands: list[str], target=config.dir) -> str|None:
+def _run(commands: list[str], target=None) -> str|None:
     try:
         if target:
             result = subprocess.run(commands,
@@ -27,49 +23,60 @@ def _run(commands: list[str], target=config.dir) -> str|None:
         return result.stdout
 
     except subprocess.CalledProcessError as e:
-        print(" --- Command Failed!! ---")
-        print(f"Command: {e.cmd}")
-        print(f"Returncode: {e.returncode}")
-        print(f"stdout: {e.stdout}")
-        print(f"stderr: {e.stderr}")
+        logger.exception("Could not run the subprocess command.")
+        logger.error(f"Command: {e.cmd}")
+        logger.error(f"Returncode: {e.returncode}")
+        logger.error(f"stdout: {e.stdout}")
+        logger.error(f"stderr: {e.stderr}")
         raise e
 
     except FileNotFoundError as e:
-        print(" --- Command Failed!! ---")
-        print(f"Error: FileNotFound {commands[-1]}")
+        logger.exception(f"Could not find the correct file {commands[-1]}.")
         raise e
 
 class MinecraftServerController:
-    def __init__(self):
-        self.target = config.dir
-        self.min_gb = config.min_gb
-        self.max_gb = config.max_gb
-        self.jar = config.jar
-        self.screen_name = config.screen_name
+    def __init__(self, server_config: ServerConfig):
+        self.target = server_config.dir
+        self.min_gb = server_config.min_gb
+        self.max_gb = server_config.max_gb
+        self.jar = server_config.jar
+        self.java_command = server_config.java_command
+        self.screen_name = server_config.screen_name
+
+    def _compose_server_start_command(self) -> list:
+        """Returns a String of the start command for a server."""
+        return ["screen",
+                "-dmS", self.screen_name,
+                *self.java_command]
 
     def start(self):
-        """
-        Starts the Minecraft Server
-        """
-        server_start_command = _compose_server_start_command()
-        print(">> Launching the server...")
-        print(f"- server_start_command = {server_start_command}")
+        """Starts the Minecraft Server"""
+        server_start_command = self._compose_server_start_command()
+        logger.info(">> Launching the server...")
+        logger.info(f"- server_start_command = {" ".join(server_start_command)}")
         try:
             _run(server_start_command, self.target)
         except Exception as e:
-            print("Could not Start the server! Check your 'config.toml' values?")
-            print(e)
+            logger.exception("Could not Start the server! Check your 'config.toml' values?")
             raise e
-        print("Server is running...!")
+        logger.info("Server is running...")
 
     def stop(self):
-        """Stops the minecraft server"""
-        print(">> Stopping the server...")
-        _run(["stop"], self.target)
-        print("Server stopped!")
+        """Stops the Minecraft server"""
+        logger.info(">> Stopping the server...")
+        try:
+            stop_cmd = ["screen", "-S", self.screen_name, "-X", "stuff","stop\n"]
+            _run(stop_cmd, self.target)
+            logger.info("Server stopped!")
+        except subprocess.CalledProcessError as e:
+            logger.exception("Could not stop the server!")
 
 
 
 if __name__ == "__main__":
-    server_controller = MinecraftServerController()
+
+
+    config = load_config()
+
+    server_controller = MinecraftServerController(config)
     server_controller.start()

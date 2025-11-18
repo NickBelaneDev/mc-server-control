@@ -4,6 +4,9 @@ from pydantic import ValidationError
 
 from .config_models import ServerConfig
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = PROJECT_ROOT / "config.toml"
@@ -11,15 +14,17 @@ CONFIG_PATH = PROJECT_ROOT / "config.toml"
 _CONFIG_CACHE: ServerConfig | None = None
 
 
+
 def load_config() -> ServerConfig:
     """Loads and caches the TOML-config"""
-    print("Loading the config.toml...")
+    logger.info("Loading the config.toml...")
     global _CONFIG_CACHE
     if _CONFIG_CACHE is not None:
         return _CONFIG_CACHE
 
     if not CONFIG_PATH.exists():
-        raise FileNotFoundError(f"Config file not found: {CONFIG_PATH}")
+        logger.error(f"Config file not found: {CONFIG_PATH}")
+        raise FileNotFoundError()
 
     with CONFIG_PATH.open("rb") as f:
         raw = tomli.load(f)
@@ -27,10 +32,9 @@ def load_config() -> ServerConfig:
     try:
         _CONFIG_CACHE = ServerConfig(**raw["mc"])
     except ValidationError as e:
-        print("Config Validation Error:")
-        print(e)
+        logger.exception("Config Validation Error: Something is wrong with your 'config.toml', maybe check all types there?")
         raise
 
-    print(">> Successfully loaded the config.toml")
+    logger.info(">> Successfully loaded the 'config.toml'.")
 
     return _CONFIG_CACHE
