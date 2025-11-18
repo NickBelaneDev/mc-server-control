@@ -1,7 +1,7 @@
 from pydantic import (BaseModel,
                       Field,
                       model_validator,
-                      field_validator)
+                      field_validator, ValidationError)
 
 from pathlib import Path
 import logging
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     # A quick Test
     print(">> Testing config_models.py")
     ServerConfig(max_gb=4,
-                min_gb="k", # Test
+                min_gb=5, # Test
                 dir="C:/Users",
-                jar="paper.jar",
+                jar="paper.j",
                 screen_name="Lustiger Screen")
