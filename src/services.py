@@ -81,4 +81,4 @@ if __name__ == "__main__":
     config = load_config()
 
     server_controller = MinecraftServerController(config)
-    server_controller.start()
+    server_controller.stop()
