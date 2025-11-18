@@ -1,8 +1,8 @@
 # ---------- Minecraft Server Configuration -------------
 [mc]
 dir = "your/server/directory"
-jar = "server.jar" # The initial server file
-min_gb = 4
-max_gb = 4
+jar = "server.jar" # The initial server.jar file
+min_gb = 4 # Minimum RAM
+max_gb = 4 # Maximum RAM
 screen_name = "minecraft_server" # Choose a custom name for the screen
 
