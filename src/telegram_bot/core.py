@@ -85,12 +85,12 @@ class TelegramBot:
         status_text += "✅ Server is ready and accepting players\\.\n" if state.is_ready else "⏳ Server is still starting up\\.\\.\\.\n"
 
         if state.started_at:
-            start_time_str = state.started_at.strftime("%Y-%m-%d %H:%M:%S")
+            start_time_str = state.started_at.strftime("%Y\\-%m\\-%d %H:%M:%S")
             status_text += f"🚀 Started at: {start_time_str}\n"
 
         player_count = len(state.online_players)
         player_list = ", ".join(state.online_players) if state.online_players else "None"
-        status_text += f"👥 Players online ({player_count}): {player_list}"
+        status_text += f"👥 Players online \\({player_count}\\): {player_list}"
 
         await context.bot.send_message(chat_id=chat_id, text=status_text, parse_mode='MarkdownV2')
 
