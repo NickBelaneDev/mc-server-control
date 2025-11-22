@@ -26,7 +26,7 @@ if __name__ == "__main__":
         exit(1)
 
     config = load_config()
-    msc = MinecraftServerController(config)
+    msc = MinecraftServerController(config.mc)
     state_manager = StateManager()
 
     bot = TelegramBot(token=_TOKEN, msc=msc, state_manager=state_manager, config=config)
@@ -48,4 +48,3 @@ if __name__ == "__main__":
             msc.stop()
             logger.info("Minecraft server stopped.")
         logger.info("Application has been shut down gracefully.")
-

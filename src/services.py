@@ -86,7 +86,7 @@ class MinecraftServerController:
 
 
 if __name__ == "__main__":
-    config = load_config()
+    config = load_config().mc
 
     server_controller = MinecraftServerController(config)
     server_controller.stop()
