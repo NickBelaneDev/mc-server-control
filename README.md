@@ -8,7 +8,8 @@ A simple Python bot to manage your Minecraft server via Telegram. Start, stop, a
 ## ✨ Features
 
 -   **🚀 Remote Control:** Start and stop your server with simple commands.
--   **📊 Live Status:** Get real-time status, including player count and a list of online players.
+-   **📊 Live Status:** Get real-time status, including ready state, uptime, and a live player list.
+-   **⚙️ Direct Command Execution:** Run any command on your server console directly from Telegram (e.g., `/cmd whitelist add <player>`).
 -   **⚙️ Background Operation:** Uses `screen` to run the server reliably in the background.
 -   **📝 Easy Configuration:** Simple setup using a `config.toml` file.
 -   **🔒 Secure:** Uses a `.env` file for your private bot token.
@@ -42,19 +43,27 @@ A simple Python bot to manage your Minecraft server via Telegram. Start, stop, a
     ```bash
     cp empty.env .env
     ```
-    ```.env
+    ```ini
     BOT_TOKEN='YOUR_SECRET_TOKEN_HERE'
     ```
 
 4.  **Configure your server:**
     -   Edit `config.toml` with the **absolute path** to your server directory and other settings.
     ```toml
+    # ---------- Minecraft Server Configuration -------------
     [mc]
     dir = "/home/user/minecraft/my_server"  # Absolute path to your server directory
     jar = "paper-1.21-10.jar"               # The initial server.jar file
     min_gb = 4                              # Minimum RAM
     max_gb = 4                              # Maximum RAM
     screen_name = "minecraft_server"        # Custom Screen name
+    log_file = "logs/latest.log"
+
+    # ---------- Telegram Bot Configuration -------------
+    [bot]
+    # A list of Telegram Chat IDs that are allowed to use this bot.
+    # Get your ID from a bot like @userinfobot
+    allowed_chat_ids = [123456789] # Example
     ```
 
 5.  **Run the bot:**
@@ -68,6 +77,9 @@ The bot will start polling. To stop everything, use the `/exit` command or press
 
 -   `/start` - Starts the Minecraft server.
 -   `/stop` - Stops the Minecraft server gracefully.
--   `/status` - Shows server status, uptime, and online players.
+-   `/status` - Shows detailed server status, including ready state, uptime, and online players.
+-   `/cmd <command>` - Executes a command on the server console (e.g., `/cmd say Hello`).
+-   `/kick <player>` - Kicks a player from the server.
+-   `/op <player>` - Grants operator status to a player.
 -   `/help` - Displays this list of commands.
 -   `/exit` - Shuts down the server and the bot.

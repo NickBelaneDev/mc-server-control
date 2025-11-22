@@ -6,6 +6,8 @@ import logging
 logger = logging.getLogger(__name__)
 from .terminal_service import run_commands, get_all_running_screens
 
+from .server_commands import ServerCommand
+
 class MinecraftServerController:
     def __init__(self, server_config: ServerConfig):
         self.config = server_config
@@ -45,7 +47,7 @@ class MinecraftServerController:
         """Stops the Minecraft server and returns True on success, False on failure."""
         logger.info(">> Stopping the server...")
         # Later on we will create Enum classes for this
-        return self.run_server_command("stop")
+        return self.run_server_command(ServerCommand.STOP.value)
 
     def run_server_command(self, command: str) -> bool:
         """Run a minecraft server command through the console."""
@@ -66,7 +68,7 @@ class MinecraftServerController:
 
     def kick_player(self, player: str) -> bool:
         """Kicks a player from the server. Returns True on success."""
-        command = f"kick {player}"
+        command = f"{ServerCommand.KICK.value} {player}"
         if self.run_server_command(command):
             logger.info(f"Player '{player}' kicked successfully.")
             return True
@@ -76,7 +78,7 @@ class MinecraftServerController:
 
     def op_player(self, player: str) -> bool:
         """Gives a player operator status. Returns True on success."""
-        command = f"op {player}"
+        command = f"{ServerCommand.OP.value} {player}"
         if self.run_server_command(command):
             logger.info(f"Player '{player}' is now an Operator.")
             return True
