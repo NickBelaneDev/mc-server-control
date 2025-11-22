@@ -25,12 +25,6 @@ def user_is_whitelisted(func):
         config = context.bot_data.get("config")
         user_id = update.effective_chat.id
 
-        # Allow if whitelist is empty (for initial setup) but log a warning.
-        if not config.bot.allowed_chat_ids:
-            logger.warning(f"User whitelist is empty. Allowing request from user {user_id}. "
-                           f"Please configure 'allowed_chat_ids' in your config.toml for security.")
-            return await func(update, context, *args, **kwargs)
-
         if user_id not in config.bot.allowed_chat_ids:
             logger.warning(f"Unauthorized access attempt by user: {user_id}")
             await context.bot.send_message(chat_id=user_id, text="You are not authorized to use this bot.")

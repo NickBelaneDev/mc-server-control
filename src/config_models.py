@@ -11,6 +11,17 @@ class BotConfig(BaseModel):
     """Holds the bot-specific configuration."""
     allowed_chat_ids: list[int] = []
 
+    @field_validator("allowed_chat_ids")
+    @classmethod
+    def check_not_empty(cls, v: list[int]) -> list[int]:
+        """Ensures the list of allowed chat IDs is not empty for security."""
+        if not v:
+            raise ValueError(
+                "The 'allowed_chat_ids' list cannot be empty. "
+                "Please add at least one Telegram Chat ID to your 'config.toml' for security reasons."
+            )
+        return v
+
 class ServerConfig(BaseModel):
     """Holds the data of the config.toml."""
     dir: str
