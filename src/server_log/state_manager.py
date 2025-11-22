@@ -2,8 +2,9 @@ import re
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional, Callable, Awaitable
+from typing import List, Optional, Callable, Awaitable, Any
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -18,14 +19,11 @@ class StateManager:
         self._state = ServerState()
         self._lock = threading.Lock()
         self._ready_callback: Optional[Callable[[], Awaitable[None]]] = None
+        self.loop = None  # Event loop for scheduling async callbacks
 
-        # Regex patterns to parse log lines
-        self.patterns = {
-            "player_joined": re.compile(r"INFO\]: (.+?) joined the game"),
-            "player_left": re.compile(r"INFO\]: (.+?) left the game"),
-            "server_ready": re.compile(r"INFO\]: Done \(.+?\)! For help, type \"help\""),
-            "player_list": re.compile(r"INFO\]: There are \d+ of a max of \d+ players online: (.*)")
-        }
+    def set_event_loop(self, loop: asyncio.AbstractEventLoop):
+        """Sets the event loop for scheduling async callbacks."""
+        self.loop = loop
 
     def register_ready_callback(self, callback: Callable[[], Awaitable[None]]):
         """Registers an async callback to be called when the server is ready."""
@@ -34,45 +32,36 @@ class StateManager:
     def get_current_state(self) -> ServerState:
         """Returns a copy of the current server state in a thread-safe manner."""
         with self._lock:
-            # Return a copy to prevent modification outside the manager
             return ServerState(
                 is_ready=self._state.is_ready,
                 started_at=self._state.started_at,
                 online_players=list(self._state.online_players)
             )
 
-    async def update_from_log(self, line: str):
-        """Parses a log line and updates the server state. Triggers callbacks if necessary."""
+    def update_from_log(self, event_type: str, data: Any):
+        """Updates the server state based on a parsed log event."""
         with self._lock:
-            # --- Server Ready ---
-            if not self._state.is_ready and self.patterns["server_ready"].search(line):
+            if event_type == "server_ready" and not self._state.is_ready:
                 self._state.is_ready = True
                 self._state.started_at = datetime.now()
                 logger.info(f"Server state updated: IS_READY = True, Players = {self._state.online_players}")
-                # Trigger callback outside the lock to avoid deadlocks
-                if self._ready_callback:
-                    # Since the callback is async, we need to schedule it.
-                    # The calling context (log_watcher) is synchronous, so we can't await it here.
-                    # The TelegramBot class will handle the async execution.
-                    # For simplicity, we assume the bot's event loop is running.
-                    import asyncio
-                    asyncio.run_coroutine_threadsafe(self._ready_callback(), asyncio.get_running_loop())
-                return
+                if self._ready_callback and self.loop:
+                    asyncio.run_coroutine_threadsafe(self._ready_callback(), self.loop)
 
-            # --- Player Joined ---
-            join_match = self.patterns["player_joined"].search(line)
-            if join_match:
-                player = join_match.group(1)
-                if player not in self._state.online_players:
-                    self._state.online_players.append(player)
-                    logger.info(f"Player '{player}' joined. Current players: {self._state.online_players}")
-                return
+            elif event_type == "player_joined":
+                player_name = data
+                if player_name not in self._state.online_players:
+                    self._state.online_players.append(player_name)
+                    logger.info(f"Player '{player_name}' joined. Current players: {self._state.online_players}")
 
-            # --- Player Left ---
-            left_match = self.patterns["player_left"].search(line)
-            if left_match:
-                player = left_match.group(1)
-                if player in self._state.online_players:
-                    self._state.online_players.remove(player)
-                    logger.info(f"Player '{player}' left. Current players: {self._state.online_players}")
-                return
+            elif event_type == "player_left":
+                player_name = data
+                if player_name in self._state.online_players:
+                    self._state.online_players.remove(player_name)
+                    logger.info(f"Player '{player_name}' left. Current players: {self._state.online_players}")
+            
+            elif event_type == "player_list":
+                # This event provides a complete list of players, so we replace the current list.
+                player_list = data
+                self._state.online_players = player_list
+                logger.info(f"Player list updated: {player_list}")
