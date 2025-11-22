@@ -19,11 +19,16 @@ class MinecraftServerController:
     @property
     def screen_name(self) -> str:
         return self.config.screen_name
+
     @property
     def is_running(self) -> bool:
         """Checks if a screen session with the configured name is currently running."""
         return self.config.screen_name in get_all_running_screens()
-        
+
+    @property
+    def java_command(self) -> list:
+        return self.config.java_command
+
     def start(self):
         """Starts the Minecraft Server"""
         server_start_command = self._compose_server_start_command()
@@ -31,27 +36,36 @@ class MinecraftServerController:
         #logger.info(f"- server_start_command = {" ".join(server_start_command)}")
         try:
             run_commands(server_start_command, self.config.dir)
-        except Exception as e:
-            logger.exception("Could not Start the server! Check your 'config.toml' values?")
+            logger.info("Server is running...")
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            logger.exception("Could not start the server! Check your 'config.toml' values and ensure 'screen' is installed.")
             raise e
-        logger.info("Server is running...")
 
     def stop(self):
-        """Stops the Minecraft server"""
+        """Stops the Minecraft server and returns True on success, False on failure."""
         logger.info(">> Stopping the server...")
-        try:
-            stop_cmd = ["screen", "-S", self.config.screen_name, "-X", "stuff","stop\n"]
-            logger.debug("Right not 'stop_cmd' has written 'stop\ n' (ignore the space btw \ and n)")
-            run_commands(stop_cmd) # target directory is not needed here
-            logger.info("Server stopped!")
-        except subprocess.CalledProcessError as e:
-            logger.exception("Could not stop the server!")
+        # Later on we will create Enum classes for this
+        return self.run_server_command("stop")
 
-    
+    def run_server_command(self, command: str) -> bool:
+        """Run a minecraft server command through the console."""
+        if not isinstance(command, str):
+            raise TypeError("Command must be a string.")
+        
+        if not command.endswith("\n"):
+            command += "\n"
+        
+        try:
+            _cmd = ["screen", "-S", self.config.screen_name, "-X", "stuff", command]
+            run_commands(_cmd)
+            logger.info(f"Command '{command.strip()}' executed successfully.")
+        except subprocess.CalledProcessError:
+            logger.error(f"Failed to run server command: {command.strip()}. Is the screen session running?")
+            return False
+        return True
+
 
 if __name__ == "__main__":
-
-
     config = load_config()
 
     server_controller = MinecraftServerController(config)

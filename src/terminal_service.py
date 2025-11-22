@@ -23,6 +23,8 @@ def run_commands(commands: list[str], target=None) -> str | None:
     except FileNotFoundError as e:
         logger.exception(f"Could not find the correct file {commands[-1]}.")
         raise e
+
+
 def get_all_running_screens() -> list[str]:
     """
     Gets a list of all currently running screen sessions.

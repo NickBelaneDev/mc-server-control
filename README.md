@@ -32,7 +32,7 @@ A simple Python bot to manage your Minecraft server via Telegram. Start, stop, a
 2.  **Install dependencies:**
     ```bash
     python -m venv .venv
-    source .venv/bin/activate # On Windows, use .venv\Scripts\activate
+    source .venv/bin/activate 
     pip install -r requirements.txt
     ```
 

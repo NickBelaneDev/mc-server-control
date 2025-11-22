@@ -1,4 +1,5 @@
 import os
+import asyncio
 
 from telegram import Update
 from telegram.ext import ContextTypes, Application, CommandHandler
@@ -38,12 +39,14 @@ class TelegramBot:
         help_handler = CommandHandler("help", self.help_command)
         exit_handler = CommandHandler("exit", self.server_exit_command)
         status_handler = CommandHandler("status", self.server_status_command)
+        cmd_handler = CommandHandler("cmd", self.server_cmd_command)
 
         self.application.add_handler(start_handler)
         self.application.add_handler(stop_handler)
         self.application.add_handler(help_handler)
         self.application.add_handler(exit_handler)
         self.application.add_handler(status_handler)
+        self.application.add_handler(cmd_handler)
 
     def run(self):
         """Run the bot."""
@@ -57,6 +60,7 @@ class TelegramBot:
             "/start    - Starts the Minecraft server\n"
             "/stop     - Stops the Minecraft server\n"
             "/status   - Shows the current server status\n"
+            "/cmd      - Executes a command on the server (e.g. /cmd say Hello)\n"
             "/exit     - Stops the server and the bot"
         )
         await context.bot.send_message(
@@ -65,16 +69,10 @@ class TelegramBot:
         )
 
     @staticmethod
-    async def server_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """Provides a formatted status overview of the server."""
-        chat_id = update.effective_chat.id
-        msc: MinecraftServerController = context.bot_data["msc"]
-        state_manager: StateManager = context.bot_data["state_manager"]
-
+    def _create_status_message(msc: MinecraftServerController, state_manager: StateManager) -> str:
+        """Creates a formatted status message for the server."""
         if not msc.is_running:
-            status_text = "🔴 *Server Status: Offline*"
-            await context.bot.send_message(chat_id=chat_id, text=status_text, parse_mode='MarkdownV2')
-            return
+            return "🔴 *Server Status: Offline*"
 
         # If the server is running, get the detailed state
         state = state_manager.get_current_state()
@@ -87,13 +85,25 @@ class TelegramBot:
             else "⏳ Server is still starting up\\.\\.\\.\n"
 
         if state.started_at:
+            # MarkdownV2 requires escaping for '-', so we use a backslash.
             start_time_str = state.started_at.strftime("%Y\\-%m\\-%d %H:%M:%S")
             status_text += f"🚀 Started at: {start_time_str}\n"
 
         player_count = len(state.online_players)
-        player_list = ", ".join(state.online_players) if state.online_players else "None"
-        status_text += f"👥 Players online \\({player_count}\\): {player_list}"
+        # Escape parentheses for MarkdownV2
+        player_list_str = ", ".join(state.online_players) if state.online_players else "None"
+        status_text += f"👥 Players online \\({player_count}\\): {player_list_str}"
 
+        return status_text
+
+    @staticmethod
+    async def server_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Provides a formatted status overview of the server."""
+        chat_id = update.effective_chat.id
+        msc: MinecraftServerController = context.bot_data["msc"]
+        state_manager: StateManager = context.bot_data["state_manager"]
+
+        status_text = TelegramBot._create_status_message(msc, state_manager)
         await context.bot.send_message(chat_id=chat_id, text=status_text, parse_mode='MarkdownV2')
 
     @staticmethod
@@ -113,7 +123,7 @@ class TelegramBot:
             text="Starting the server..."
         )
 
-        msc.start()
+        await asyncio.to_thread(msc.start)
 
         # Start the log watcher after the server starts
         config = context.bot_data["config"]
@@ -150,12 +160,48 @@ class TelegramBot:
             stop_watching(observer)
             context.bot_data["watchdog_observer"] = None
 
-        msc.stop()
+        success = await asyncio.to_thread(msc.stop)
 
         await context.bot.send_message(
             chat_id=chat_id,
             text="Server Stopped!"
         )
+
+    @staticmethod
+    async def server_cmd_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Executes a command on the Minecraft server console."""
+        chat_id = update.effective_chat.id
+        msc: MinecraftServerController = context.bot_data["msc"]
+
+        if not msc.is_running:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="🔴 Server is not running. Cannot execute command."
+            )
+            return
+
+        # context.args contains a list of strings, the arguments passed with the command
+        if not context.args:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="Please provide a command to execute.\nExample: `/cmd say Hello World`",
+                parse_mode='MarkdownV2'
+            )
+            return
+
+        command_to_run = " ".join(context.args)
+        
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"Executing command: `{command_to_run}`",
+            parse_mode='MarkdownV2'
+        )
+        
+        
+        if await asyncio.to_thread(msc.run_server_command, command_to_run):
+            await context.bot.send_message(chat_id=chat_id, text="✅ Command executed successfully.")
+        else:
+            await context.bot.send_message(chat_id=chat_id, text="❌ Failed to execute command. Is the server running correctly?")
 
     async def server_exit_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Stops the bot gracefully. The main.py finally block will handle server shutdown."""
