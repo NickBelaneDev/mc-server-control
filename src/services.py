@@ -66,7 +66,7 @@ class MinecraftServerController:
         """Stops the Minecraft server"""
         logger.info(">> Stopping the server...")
         try:
-            stop_cmd = ["screen", "-S", self.screen_name, "-X", "stuff","stop\n"]
+            stop_cmd = ["screen", "-S", self.screen_name, "-X", "stuff","stop"]
             logger.debug("Right not 'stop_cmd' has written 'stop\ n' (ignore the space btw \ and n)")
             _run(stop_cmd, self.target)
             logger.info("Server stopped!")
