@@ -10,8 +10,8 @@ from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv())
 _TOKEN = os.getenv("BOT_TOKEN")
 
-from src.config_loader import load_config
-from src.services import MinecraftServerController
+from ..config_loader import load_config
+from ..services import MinecraftServerController
 
 #TODO: Remove that later and put the condition into the MinecraftServerController Class.
 server_status = {           # TO BE REMOVED
