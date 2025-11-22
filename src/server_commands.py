@@ -1,0 +1,27 @@
+from enum import Enum
+
+class ServerCommand(Enum):
+    KICK = "kick"
+    STOP = "stop"
+    RELOAD = "reload"
+    SAVE_ALL = "save-all"
+    LIST = "list"
+    BAN = "ban"
+    PARDON = "pardon"
+    OP = "op"
+    DEOP = "deop"
+    GAMEMODE = "gamemode"
+    DIFFICULTY = "difficulty"
+    WEATHER = "weather"
+    TIME = "time"
+    TP = "tp"
+    SAY = "say"
+    WHITELIST = "whitelist"
+    GIVE = "give"
+    EFFECT = "effect"
+    ENCHANT = "enchant"
+    EXPERIENCE = "experience"
+    CLEAR = "clear"
+    MSG = "msg"
+    KILL = "kill"
+
