@@ -22,12 +22,24 @@ class LogFileHandler(FileSystemEventHandler):
         except FileNotFoundError:
             self.last_pos = 0
 
+    def on_created(self, event):
+        """
+        Called when a file or directory is created.
+        This handles cases where the log file is recreated (e.g., on server start).
+        """
+        if event.src_path == self.file_path:
+            logger.info(f"Log file '{os.path.basename(self.file_path)}' was created. Resetting position.")
+            self.last_pos = 0
+            self._process_new_lines()
+
     def on_modified(self, event):
         """
         Called when a file or directory is modified.
         """
         if event.src_path == self.file_path:
             self._process_new_lines()
+        # Note: We don't need on_moved, as watchdog reports it as on_deleted for the old path
+        # and on_created for the new path. on_created is sufficient.
 
     def _process_new_lines(self):
         """Reads and processes new lines from the log file."""
