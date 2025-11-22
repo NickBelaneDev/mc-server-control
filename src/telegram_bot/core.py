@@ -3,6 +3,7 @@ import asyncio
 
 from telegram import Update
 from telegram.ext import ContextTypes, Application, CommandHandler
+from telegram.helpers import escape_markdown
 
 import logging
 logger = logging.getLogger(__name__)
@@ -197,9 +198,10 @@ class TelegramBot:
 
         command_to_run = " ".join(context.args)
         
+        escaped_command = escape_markdown(command_to_run, version=2)
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"Executing command: `{command_to_run}`",
+            text=f"Executing command: `{escaped_command}`",
             parse_mode='MarkdownV2'
         )
         
@@ -228,14 +230,15 @@ class TelegramBot:
             return
 
         player_name = context.args[0]
-        await context.bot.send_message(chat_id=chat_id, text=f"Attempting to kick player `{player_name}`...", parse_mode='MarkdownV2')
+        escaped_player_name = escape_markdown(player_name, version=2)
+        await context.bot.send_message(chat_id=chat_id, text=f"Attempting to kick player `{escaped_player_name}`\\.\\.\\.", parse_mode='MarkdownV2')
 
         success = await asyncio.to_thread(msc.kick_player, player_name)
 
         if success:
-            await context.bot.send_message(chat_id=chat_id, text=f"✅ Player `{player_name}` kicked.", parse_mode='MarkdownV2')
+            await context.bot.send_message(chat_id=chat_id, text=f"✅ Player `{escaped_player_name}` kicked\\.", parse_mode='MarkdownV2')
         else:
-            await context.bot.send_message(chat_id=chat_id, text=f"❌ Failed to kick player `{player_name}`.", parse_mode='MarkdownV2')
+            await context.bot.send_message(chat_id=chat_id, text=f"❌ Failed to kick player `{escaped_player_name}`\\.", parse_mode='MarkdownV2')
 
     @staticmethod
     async def server_op_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -256,18 +259,19 @@ class TelegramBot:
             return
 
         player_name = context.args[0]
+        escaped_player_name = escape_markdown(player_name, version=2)
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"Attempting to grant operator status to `{player_name}`...",
+            text=f"Attempting to grant operator status to `{escaped_player_name}`\\.\\.\\.",
             parse_mode='MarkdownV2'
         )
 
         success = await asyncio.to_thread(msc.op_player, player_name)
 
         if success:
-            await context.bot.send_message(chat_id=chat_id, text=f"✅ Player `{player_name}` is now an operator.", parse_mode='MarkdownV2')
+            await context.bot.send_message(chat_id=chat_id, text=f"✅ Player `{escaped_player_name}` is now an operator\\.", parse_mode='MarkdownV2')
         else:
-            await context.bot.send_message(chat_id=chat_id, text=f"❌ Failed to grant operator status to `{player_name}`.", parse_mode='MarkdownV2')
+            await context.bot.send_message(chat_id=chat_id, text=f"❌ Failed to grant operator status to `{escaped_player_name}`\\.", parse_mode='MarkdownV2')
 
     async def server_exit_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Stops the bot gracefully. The main.py finally block will handle server shutdown."""
