@@ -39,7 +39,6 @@ class LogFileHandler(FileSystemEventHandler):
         if event.src_path == self.file_path:
             self._process_new_lines()
         # Note: We don't need on_moved, as watchdog reports it as on_deleted for the old path
-        # and on_created for the new path. on_created is sufficient.
 
     def _process_new_lines(self):
         """Reads and processes new lines from the log file."""
