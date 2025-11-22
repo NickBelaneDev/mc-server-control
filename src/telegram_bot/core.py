@@ -197,7 +197,7 @@ class TelegramBot:
             parse_mode='MarkdownV2'
         )
         
-        
+        # Run the command on the server asynchronously
         if await asyncio.to_thread(msc.run_server_command, command_to_run):
             await context.bot.send_message(chat_id=chat_id, text="✅ Command executed successfully.")
         else:
@@ -213,6 +213,8 @@ class TelegramBot:
         # This signals run_polling() to stop.
         # The cleanup logic in main.py's finally block will then be executed.
         self.application.stop_running()
-        
-        
-        
+
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Server offline."
+        )

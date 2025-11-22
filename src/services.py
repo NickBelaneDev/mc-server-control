@@ -64,6 +64,25 @@ class MinecraftServerController:
             return False
         return True
 
+    def kick_player(self, player: str):
+        """Kicks a player from the server."""
+
+        if not isinstance(player, str):
+            raise TypeError("Player must be a string.")
+
+        command = f"kick {player}"
+        if not self.run_server_command(command):
+            logger.error(f"Failed to kick player: {player}")
+        logger.info(f"Player '{player}' kicked successfully.")
+
+    def op_player(self, player: str):
+        if not isinstance(player, str):
+            raise TypeError("Player must be a string.")
+
+        command = f"op {player}"
+        if not self.run_server_command(command):
+            logger.error(f"Failed to op player: {player}")
+        logger.info(f"Player '{player}' is now an Operator.")
 
 if __name__ == "__main__":
     config = load_config()
