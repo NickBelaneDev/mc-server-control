@@ -9,4 +9,5 @@ perform basic operations as well as to monitor the server-stats.
 
 ### **Here is how it works yet:**
 Open the config.toml and paste all your server information needed.
-
+Load the `MinecraftServerController` by instantiating `MinecraftServerController(load_config())`
+After that you are ready to use the `MinecraftServerController`.

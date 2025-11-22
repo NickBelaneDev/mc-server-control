@@ -13,10 +13,6 @@ _TOKEN = os.getenv("BOT_TOKEN")
 from ..config_loader import load_config
 from ..services import MinecraftServerController
 
-#TODO: Remove that later and put the condition into the MinecraftServerController Class.
-server_status = {           # TO BE REMOVED
-    "is_running": False
-}
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Return basic help text."""
@@ -29,18 +25,20 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         text=help_txt
     )
 
+
+
 async def server_start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Starts the minecraft server."""
     chat_id = update.effective_chat.id
-
-    if server_status["is_running"]: # TO BE REMOVED
+    msc: MinecraftServerController = context.bot_data["msc"]
+    if msc.is_running:
         await context.bot.send_message(
             chat_id=chat_id,
             text="Server is already running!"
         )
         return
 
-    msc = context.bot_data["msc"]
+
     await context.bot.send_message(
         chat_id=chat_id,
         text="Starting the server..."
@@ -52,13 +50,14 @@ async def server_start_command(update: Update, context: ContextTypes.DEFAULT_TYP
         chat_id=chat_id,
         text="Server started!"
     )
-    server_status["is_running"] = True
+
 
 async def server_stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Stops the minecraft server."""
     chat_id = update.effective_chat.id
+    msc: MinecraftServerController = context.bot_data["msc"]
 
-    if not server_status["is_running"]:# TO BE REMOVED
+    if not msc.is_running:
         await context.bot.send_message(
             chat_id=chat_id,
             text="Server is not running!"
@@ -77,7 +76,6 @@ async def server_stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         chat_id=chat_id,
         text="Server Stopped!"
     )
-    server_status["is_running"] = False
 
 def main() -> None:
     msc = MinecraftServerController(load_config())
