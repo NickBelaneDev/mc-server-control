@@ -74,3 +74,11 @@ class StateManager:
     def get_current_state(self) -> ServerState:
         """Returns the current state model."""
         return self.state
+
+    def __str__(self):
+        return (f"ServerState:\n"
+                f"is_ready =    {self.state.is_ready}\n"
+                f"online_players =          {self.state.online_players}\n"
+                f"player_uuids = {self.state.player_uuids}\n"
+                f"last_error = {self.state.last_error}\n"
+                f"started_at = {self.state.started_at}")

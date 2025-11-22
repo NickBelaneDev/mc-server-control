@@ -36,12 +36,14 @@ class TelegramBot:
         start_handler = CommandHandler("start", self.server_start_command)
         stop_handler = CommandHandler("stop", self.server_stop_command)
         help_handler = CommandHandler("help", self.help_command)
+        exit_handler = CommandHandler("exit", self.server_exit_command)
 
         # TODO: Add a /status command that reads from state_manager
 
         self.application.add_handler(start_handler)
         self.application.add_handler(stop_handler)
         self.application.add_handler(help_handler)
+        self.application.add_handler(exit_handler)
 
     def run(self):
         """Run the bot."""
@@ -51,10 +53,26 @@ class TelegramBot:
     @staticmethod
     async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Return basic help text."""
-        help_txt = """/start    starts the server\n/stop    stops the server\n"""
+        help_txt = (
+            "/start    - Startet den Minecraft-Server\n"
+            "/stop     - Stoppt den Minecraft-Server\n"
+            "/exit     - Stoppt den Server und den Bot\n"
+            "/status   - Gibt den Status über den Server aus."
+        )
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=help_txt
+        )
+
+    async def server_status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        chat_id = update.effective_chat.id
+        msc: MinecraftServerController = context.bot_data["msc"]
+        server_state_manager: StateManager = context.bot_data["state_manager"]
+        server_status = server_state_manager.get_current_state()
+
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=str(server_status)
         )
 
     @staticmethod
@@ -117,3 +135,17 @@ class TelegramBot:
             chat_id=chat_id,
             text="Server Stopped!"
         )
+
+    async def server_exit_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Stops the bot gracefully. The main.py finally block will handle server shutdown."""
+        logger.info("Received /exit command. Initiating graceful shutdown.")
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Fahre den Bot und den Server herunter..."
+        )
+        # This signals run_polling() to stop.
+        # The cleanup logic in main.py's finally block will then be executed.
+        self.application.stop_running()
+        
+        
+        

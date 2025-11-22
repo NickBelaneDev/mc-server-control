@@ -35,6 +35,7 @@ if __name__ == "__main__":
         bot.run()
     except (KeyboardInterrupt, SystemExit):
         logger.info("Shutdown signal received. Stopping services...")
+
     finally:
         # Ensure a clean shutdown of the Minecraft server and watchdog
         if msc.is_running:
