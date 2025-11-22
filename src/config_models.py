@@ -15,6 +15,7 @@ class ServerConfig(BaseModel):
     max_gb: int = Field(..., ge=1, le=12)
     screen_name: str
     log_file: str = "logs/latest.log"
+    allowed_chat_ids: list[str] = []
 
     @model_validator(mode="after")
     def ensure_order(self):
