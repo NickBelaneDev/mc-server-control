@@ -38,7 +38,7 @@ class LogFileHandler(FileSystemEventHandler):
                 if not new_lines:
                     return
 
-                logger.debug(f"Detected {len(new_lines)} new lines in {os.path.basename(self.file_path)}.")
+                logger.info(f"Detected {len(new_lines)} new lines in {os.path.basename(self.file_path)}.")
                 for line in new_lines:
                     line = line.strip()
                     if not line:

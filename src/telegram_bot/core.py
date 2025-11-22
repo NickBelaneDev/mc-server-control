@@ -82,7 +82,9 @@ class TelegramBot:
         # Build a nicely formatted message
         status_text = "🟢 *Server Status: Online*\n\n"
 
-        status_text += "✅ Server is ready and accepting players\\.\n" if state.is_ready else "⏳ Server is still starting up\\.\\.\\.\n"
+        status_text += "✅ Server is ready and accepting players\\.\n" \
+            if state.is_ready \
+            else "⏳ Server is still starting up\\.\\.\\.\n"
 
         if state.started_at:
             start_time_str = state.started_at.strftime("%Y\\-%m\\-%d %H:%M:%S")
