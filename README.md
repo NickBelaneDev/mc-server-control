@@ -25,7 +25,7 @@ A simple Python bot to manage your Minecraft server via Telegram. Start, stop, a
 
 1.  **Clone the repo:**
     ```bash
-    git clone <your-repository-url>
+    git clone https://github.com/NickBelaneDev/mc-server-control
     cd minecraft-server
     ```
 
@@ -50,11 +50,11 @@ A simple Python bot to manage your Minecraft server via Telegram. Start, stop, a
     -   Edit `config.toml` with the **absolute path** to your server directory and other settings.
     ```toml
     [mc]
-    dir = "/home/user/minecraft/my_server"
-    jar = "paper-1.21-10.jar"
-    min_gb = 4
-    max_gb = 4
-    screen_name = "minecraft_server"
+    dir = "/home/user/minecraft/my_server"  # Absolute path to your server directory
+    jar = "paper-1.21-10.jar"               # The initial server.jar file
+    min_gb = 4                              # Minimum RAM
+    max_gb = 4                              # Maximum RAM
+    screen_name = "minecraft_server"        # Custom Screen name
     ```
 
 5.  **Run the bot:**
