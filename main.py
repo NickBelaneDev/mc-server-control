@@ -10,5 +10,5 @@ logging.basicConfig(level=logging.DEBUG,
 if __name__ == "__main__":
     config = load_config()
     msc = MinecraftServerController(config)
-    msc.stop()
+
 
