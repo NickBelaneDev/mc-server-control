@@ -41,7 +41,7 @@ class MinecraftServerController:
             logger.exception("Could not start the server! Check your 'config.toml' values and ensure 'screen' is installed.")
             raise e
 
-    def stop(self):
+    def stop(self) -> bool:
         """Stops the Minecraft server and returns True on success, False on failure."""
         logger.info(">> Stopping the server...")
         # Later on we will create Enum classes for this

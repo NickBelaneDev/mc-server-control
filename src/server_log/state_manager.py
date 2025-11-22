@@ -1,84 +1,78 @@
-import logging
+import re
+import threading
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
-
-from pydantic import BaseModel, Field
-
-from .parser import LogPattern
+from typing import List, Optional, Callable, Awaitable
+import logging
 
 logger = logging.getLogger(__name__)
 
-
-class ServerState(BaseModel):
-    """Pydantic model representing the server's current state."""
+@dataclass
+class ServerState:
     is_ready: bool = False
-    online_players: list[str] = Field(default_factory=list)
-    player_uuids: dict[str, str] = Field(default_factory=dict)
-    last_error: Optional[str] = None
     started_at: Optional[datetime] = None
-
+    online_players: List[str] = field(default_factory=list)
 
 class StateManager:
-    """Manages the server state based on log events."""
-
     def __init__(self):
-        self.state = ServerState()
-        logger.info("StateManager initialized with default state.")
+        self._state = ServerState()
+        self._lock = threading.Lock()
+        self._ready_callback: Optional[Callable[[], Awaitable[None]]] = None
 
-    def update_from_log(self, pattern: LogPattern, data: dict):
-        """Updates the state based on a parsed log event."""
-        logger.debug(f"Updating state with event: {pattern.name}, data: {data}")
+        # Regex patterns to parse log lines
+        self.patterns = {
+            "player_joined": re.compile(r"INFO\]: (.+?) joined the game"),
+            "player_left": re.compile(r"INFO\]: (.+?) left the game"),
+            "server_ready": re.compile(r"INFO\]: Done \(.+?\)! For help, type \"help\""),
+            "player_list": re.compile(r"INFO\]: There are \d+ of a max of \d+ players online: (.*)")
+        }
 
-        if pattern == LogPattern.SERVER_DONE:
-            self.state.is_ready = True
-            self.state.started_at = datetime.now()
-            logger.info("Server is ready!")
-
-        elif pattern == LogPattern.USER_LOGIN:
-            username = data.get("username")
-            if username and username not in self.state.online_players:
-                self.state.online_players.append(username)
-                logger.info(f"Player '{username}' added to online list.")
-
-        elif pattern in (LogPattern.USER_LOGOUT, LogPattern.PLAYER_DISCONNECTED):
-            username = data.get("username")
-            if username and username in self.state.online_players:
-                self.state.online_players.remove(username)
-                logger.info(f"Player '{username}' removed from online list.")
-
-        elif pattern == LogPattern.PLAYER_UUID:
-            username = data.get("username")
-            uuid = data.get("uuid")
-            if username and uuid:
-                self.state.player_uuids[username] = uuid
-                logger.info(f"Stored UUID for player '{username}'.")
-
-        elif pattern == LogPattern.SERVER_ERROR:
-            error_message = data.get("error_message")
-            self.state.last_error = error_message
-            logger.error(f"Server error detected: {error_message}")
-
-        elif pattern == LogPattern.LIST_PLAYERS:
-            # This is the "Active Sync" from your plan.md
-            # It overwrites the current player list with the ground truth from the server.
-            player_str = data.get("players", "")
-            if player_str:
-                # Split by comma and strip whitespace from each name
-                current_players = {p.strip() for p in player_str.split(',') if p.strip()}
-            else:
-                current_players = set()
-
-            self.state.online_players = sorted(list(current_players))
-            logger.info(f"Player list synced via /list. Online: {self.state.online_players}")
+    def register_ready_callback(self, callback: Callable[[], Awaitable[None]]):
+        """Registers an async callback to be called when the server is ready."""
+        self._ready_callback = callback
 
     def get_current_state(self) -> ServerState:
-        """Returns the current state model."""
-        return self.state
+        """Returns a copy of the current server state in a thread-safe manner."""
+        with self._lock:
+            # Return a copy to prevent modification outside the manager
+            return ServerState(
+                is_ready=self._state.is_ready,
+                started_at=self._state.started_at,
+                online_players=list(self._state.online_players)
+            )
 
-    def __str__(self):
-        return (f"ServerState:\n"
-                f"is_ready =    {self.state.is_ready}\n"
-                f"online_players =          {self.state.online_players}\n"
-                f"player_uuids = {self.state.player_uuids}\n"
-                f"last_error = {self.state.last_error}\n"
-                f"started_at = {self.state.started_at}")
+    async def update_from_log(self, line: str):
+        """Parses a log line and updates the server state. Triggers callbacks if necessary."""
+        with self._lock:
+            # --- Server Ready ---
+            if not self._state.is_ready and self.patterns["server_ready"].search(line):
+                self._state.is_ready = True
+                self._state.started_at = datetime.now()
+                logger.info(f"Server state updated: IS_READY = True, Players = {self._state.online_players}")
+                # Trigger callback outside the lock to avoid deadlocks
+                if self._ready_callback:
+                    # Since the callback is async, we need to schedule it.
+                    # The calling context (log_watcher) is synchronous, so we can't await it here.
+                    # The TelegramBot class will handle the async execution.
+                    # For simplicity, we assume the bot's event loop is running.
+                    import asyncio
+                    asyncio.run_coroutine_threadsafe(self._ready_callback(), asyncio.get_running_loop())
+                return
+
+            # --- Player Joined ---
+            join_match = self.patterns["player_joined"].search(line)
+            if join_match:
+                player = join_match.group(1)
+                if player not in self._state.online_players:
+                    self._state.online_players.append(player)
+                    logger.info(f"Player '{player}' joined. Current players: {self._state.online_players}")
+                return
+
+            # --- Player Left ---
+            left_match = self.patterns["player_left"].search(line)
+            if left_match:
+                player = left_match.group(1)
+                if player in self._state.online_players:
+                    self._state.online_players.remove(player)
+                    logger.info(f"Player '{player}' left. Current players: {self._state.online_players}")
+                return

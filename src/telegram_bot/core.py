@@ -1,5 +1,6 @@
 import os
 import asyncio
+from functools import wraps
 
 from telegram import Update
 from telegram.ext import ContextTypes, Application, CommandHandler
@@ -17,6 +18,29 @@ from ..server_log.state_manager import StateManager
 from ..server_log.log_watcher import start_watching, stop_watching
 
 
+def user_is_whitelisted(func):
+    """Decorator to check if the user is allowed to execute a command."""
+    @wraps(func)
+    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
+        config = context.bot_data.get("config")
+        user_id = update.effective_chat.id
+
+        # Allow if whitelist is empty (for initial setup) but log a warning.
+        if not config.bot.allowed_chat_ids:
+            logger.warning(f"User whitelist is empty. Allowing request from user {user_id}. "
+                           f"Please configure 'allowed_chat_ids' in your config.toml for security.")
+            return await func(update, context, *args, **kwargs)
+
+        if user_id not in config.bot.allowed_chat_ids:
+            logger.warning(f"Unauthorized access attempt by user: {user_id}")
+            await context.bot.send_message(chat_id=user_id, text="You are not authorized to use this bot.")
+            return
+
+        return await func(update, context, *args, **kwargs)
+
+    return wrapper
+
+
 class TelegramBot:
     def __init__(self, token: str, msc: MinecraftServerController, state_manager: StateManager, config: load_config):
         self.msc = msc
@@ -32,6 +56,10 @@ class TelegramBot:
         self.application.bot_data["state_manager"] = self.state_manager
         self.application.bot_data["config"] = self.config
         self.application.bot_data["watchdog_observer"] = None  # Initialize as not running
+        
+        # Register a callback for the "server ready" event
+        # We need a way to know which chat to notify. We'll store it when /start is called.
+        self.state_manager.register_ready_callback(self.on_server_ready)
 
     def _add_handlers(self):
         """Set Handlers."""
@@ -57,6 +85,26 @@ class TelegramBot:
         """Run the bot."""
         logger.info("Bot running and waiting for messages...")
         self.application.run_polling(poll_interval=1)
+        
+    async def on_server_ready(self):
+        """Async callback triggered by the StateManager when the server is ready."""
+        chat_id_to_notify = self.application.bot_data.get("last_chat_id")
+        if chat_id_to_notify:
+            logger.info(f"Server is ready. Notifying chat_id: {chat_id_to_notify}")
+            try:
+                await self.application.bot.send_message(
+                    chat_id=chat_id_to_notify,
+                    text="🚀 Server is ready and accepting players!"
+                )
+            except Exception as e:
+                logger.error(f"Failed to send 'server ready' notification: {e}")
+
+    async def initial_state_sync(self):
+        """Checks server status on bot start and syncs state if necessary."""
+        if self.msc.is_running:
+            logger.info("Server is already running on bot startup. Synchronizing state.")
+            await asyncio.sleep(1) # Give log watcher a moment to start
+            await asyncio.to_thread(self.msc.run_server_command, "list")
 
     @staticmethod
     async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -114,6 +162,7 @@ class TelegramBot:
         await context.bot.send_message(chat_id=chat_id, text=status_text, parse_mode='MarkdownV2')
 
     @staticmethod
+    @user_is_whitelisted
     async def server_start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Starts the minecraft server."""
         chat_id = update.effective_chat.id
@@ -137,13 +186,12 @@ class TelegramBot:
         state_manager = context.bot_data["state_manager"]
         observer = start_watching(str(config.full_log_path), state_manager)
         context.bot_data["watchdog_observer"] = observer
-
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text="Server started!"
-        )
+        
+        # Store the chat_id to notify when the server is ready
+        context.bot_data["last_chat_id"] = chat_id
 
     @staticmethod
+    @user_is_whitelisted
     async def server_stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Stops the minecraft server."""
         chat_id = update.effective_chat.id
@@ -175,6 +223,7 @@ class TelegramBot:
         )
 
     @staticmethod
+    @user_is_whitelisted
     async def server_cmd_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Executes a command on the Minecraft server console."""
         chat_id = update.effective_chat.id
@@ -212,6 +261,7 @@ class TelegramBot:
             await context.bot.send_message(chat_id=chat_id, text="❌ Failed to execute command. Is the server running correctly?")
 
     @staticmethod
+    @user_is_whitelisted
     async def server_kick_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Kicks a player from the server."""
         chat_id = update.effective_chat.id
@@ -241,6 +291,7 @@ class TelegramBot:
             await context.bot.send_message(chat_id=chat_id, text=f"❌ Failed to kick player `{escaped_player_name}`\\.", parse_mode='MarkdownV2')
 
     @staticmethod
+    @user_is_whitelisted
     async def server_op_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Gives a player operator status."""
         chat_id = update.effective_chat.id
@@ -273,6 +324,7 @@ class TelegramBot:
         else:
             await context.bot.send_message(chat_id=chat_id, text=f"❌ Failed to grant operator status to `{escaped_player_name}`\\.", parse_mode='MarkdownV2')
 
+    @user_is_whitelisted
     async def server_exit_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Stops the bot gracefully. The main.py finally block will handle server shutdown."""
         logger.info("Received /exit command. Initiating graceful shutdown.")
