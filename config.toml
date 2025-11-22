@@ -1,8 +1,9 @@
 # ---------- Minecraft Server Configuration -------------
 [mc]
-dir = "C:/Users"
+dir = "/your/server/directory"
 jar = "server.jar" # The initial server.jar file
 min_gb = 4 # Minimum RAM
 max_gb = 4 # Maximum RAM
 screen_name = "minecraft_server" # Choose a custom name for the screen
 log_file = "logs/latest.log" # Relative path to the log file from the server directory
+
