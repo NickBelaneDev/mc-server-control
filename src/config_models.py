@@ -14,6 +14,7 @@ class ServerConfig(BaseModel):
     min_gb: int = Field(..., ge=1, le=12)  #
     max_gb: int = Field(..., ge=1, le=12)
     screen_name: str
+    log_file: str = "logs/latest.log"
 
     @model_validator(mode="after")
     def ensure_order(self):
@@ -40,6 +41,11 @@ class ServerConfig(BaseModel):
             return v
         else:
             raise ValueError(f"{v} Could not be found! Check your 'config.toml' and make sure to enter an existing directory.")
+
+    @property
+    def full_log_path(self) -> Path:
+        """Returns the full, absolute path to the log file."""
+        return Path(self.dir) / self.log_file
 
     @property
     def java_command(self) -> list[str]:
