@@ -9,5 +9,7 @@ perform basic operations as well as to monitor the server-stats.
 
 ### **Here is how it works yet:**
 Open the config.toml and paste all your server information needed.
-Load the `MinecraftServerController` by instantiating `MinecraftServerController(load_config())`
-After that you are ready to use the `MinecraftServerController`.
+Use the empty.env as a template and paste in your bot token.
+
+You can now run `python main.py` and the bot will start.
+

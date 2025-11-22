@@ -48,3 +48,4 @@ if __name__ == "__main__":
             msc.stop()
             logger.info("Minecraft server stopped.")
         logger.info("Application has been shut down gracefully.")
+
