@@ -2,7 +2,7 @@ import tomli
 
 from pydantic import ValidationError
 
-from .config_models import ServerConfig
+from .config_models import AppConfig
 from pathlib import Path
 import logging
 
@@ -11,11 +11,11 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = PROJECT_ROOT / "config.toml"
 
-_CONFIG_CACHE: ServerConfig | None = None
+_CONFIG_CACHE: AppConfig | None = None
 
 
 
-def load_config() -> ServerConfig:
+def load_config() -> AppConfig:
     """Loads and caches the TOML-config"""
     logger.info("Loading the config.toml...")
     global _CONFIG_CACHE
@@ -30,7 +30,7 @@ def load_config() -> ServerConfig:
         raw = tomli.load(f)
 
     try:
-        _CONFIG_CACHE = ServerConfig(**raw["mc"])
+        _CONFIG_CACHE = AppConfig(**raw)
     except ValidationError as e:
         logger.exception("Config Validation Error: Something is wrong with your 'config.toml', maybe check all types there?")
         raise

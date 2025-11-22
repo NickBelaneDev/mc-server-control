@@ -7,6 +7,10 @@ from pathlib import Path
 import logging
 logger = logging.getLogger(__name__)
 
+class BotConfig(BaseModel):
+    """Holds the bot-specific configuration."""
+    allowed_chat_ids: list[int] = []
+
 class ServerConfig(BaseModel):
     """Holds the data of the config.toml."""
     dir: str
@@ -15,7 +19,6 @@ class ServerConfig(BaseModel):
     max_gb: int = Field(..., ge=1, le=12)
     screen_name: str
     log_file: str = "logs/latest.log"
-    allowed_chat_ids: list[str] = []
 
     @model_validator(mode="after")
     def ensure_order(self):
@@ -62,6 +65,11 @@ class ServerConfig(BaseModel):
     def __str__(self) -> str:
         """Returns the string representation of the java command."""
         return f"java -Xms{self.min_gb}G -Xmx{self.max_gb}G -jar {self.jar}"
+
+class AppConfig(BaseModel):
+    """The root model for the entire application configuration."""
+    mc: ServerConfig = Field(..., alias='mc')
+    bot: BotConfig = Field(..., alias='bot')
 
 if __name__ == "__main__":
     # A quick Test

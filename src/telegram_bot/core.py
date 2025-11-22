@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv())
 
-from ..config_loader import load_config
+from ..config_models import AppConfig
 from ..services import MinecraftServerController
 from ..server_log.state_manager import StateManager
 from ..server_log.log_watcher import start_watching, stop_watching
@@ -42,7 +42,7 @@ def user_is_whitelisted(func):
 
 
 class TelegramBot:
-    def __init__(self, token: str, msc: MinecraftServerController, state_manager: StateManager, config: load_config):
+    def __init__(self, token: str, msc: MinecraftServerController, state_manager: StateManager, config: AppConfig):
         self.msc = msc
         self.state_manager = state_manager
         self.config = config
@@ -182,9 +182,9 @@ class TelegramBot:
         await asyncio.to_thread(msc.start)
 
         # Start the log watcher after the server starts
-        config = context.bot_data["config"]
+        config: AppConfig = context.bot_data["config"]
         state_manager = context.bot_data["state_manager"]
-        observer = start_watching(str(config.full_log_path), state_manager)
+        observer = start_watching(str(config.mc.full_log_path), state_manager)
         context.bot_data["watchdog_observer"] = observer
         
         # Store the chat_id to notify when the server is ready
