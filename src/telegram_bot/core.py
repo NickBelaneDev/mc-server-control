@@ -37,13 +37,13 @@ class TelegramBot:
         stop_handler = CommandHandler("stop", self.server_stop_command)
         help_handler = CommandHandler("help", self.help_command)
         exit_handler = CommandHandler("exit", self.server_exit_command)
-
-        # TODO: Add a /status command that reads from state_manager
+        status_handler = CommandHandler("status", self.server_status_command)
 
         self.application.add_handler(start_handler)
         self.application.add_handler(stop_handler)
         self.application.add_handler(help_handler)
         self.application.add_handler(exit_handler)
+        self.application.add_handler(status_handler)
 
     def run(self):
         """Run the bot."""
@@ -54,26 +54,45 @@ class TelegramBot:
     async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Return basic help text."""
         help_txt = (
-            "/start    - Startet den Minecraft-Server\n"
-            "/stop     - Stoppt den Minecraft-Server\n"
-            "/exit     - Stoppt den Server und den Bot\n"
-            "/status   - Gibt den Status über den Server aus."
+            "/start    - Starts the Minecraft server\n"
+            "/stop     - Stops the Minecraft server\n"
+            "/status   - Shows the current server status\n"
+            "/exit     - Stops the server and the bot"
         )
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=help_txt
         )
 
-    async def server_status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    @staticmethod
+    async def server_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Provides a formatted status overview of the server."""
         chat_id = update.effective_chat.id
         msc: MinecraftServerController = context.bot_data["msc"]
-        server_state_manager: StateManager = context.bot_data["state_manager"]
-        server_status = server_state_manager.get_current_state()
+        state_manager: StateManager = context.bot_data["state_manager"]
 
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text=str(server_status)
-        )
+        if not msc.is_running:
+            status_text = "🔴 *Server Status: Offline*"
+            await context.bot.send_message(chat_id=chat_id, text=status_text, parse_mode='MarkdownV2')
+            return
+
+        # If the server is running, get the detailed state
+        state = state_manager.get_current_state()
+
+        # Build a nicely formatted message
+        status_text = "🟢 *Server Status: Online*\n\n"
+
+        status_text += "✅ Server is ready and accepting players\\.\n" if state.is_ready else "⏳ Server is still starting up\\.\\.\\.\n"
+
+        if state.started_at:
+            start_time_str = state.started_at.strftime("%Y-%m-%d %H:%M:%S")
+            status_text += f"🚀 Started at: {start_time_str}\n"
+
+        player_count = len(state.online_players)
+        player_list = ", ".join(state.online_players) if state.online_players else "None"
+        status_text += f"👥 Players online ({player_count}): {player_list}"
+
+        await context.bot.send_message(chat_id=chat_id, text=status_text, parse_mode='MarkdownV2')
 
     @staticmethod
     async def server_start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -141,7 +160,7 @@ class TelegramBot:
         logger.info("Received /exit command. Initiating graceful shutdown.")
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="Fahre den Bot und den Server herunter..."
+            text="Shutting down the bot and the server..."
         )
         # This signals run_polling() to stop.
         # The cleanup logic in main.py's finally block will then be executed.

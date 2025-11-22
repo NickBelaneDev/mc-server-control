@@ -10,7 +10,7 @@ from src.telegram_bot.core import TelegramBot
 from src.server_log.log_watcher import stop_watching
 
 
-logging.basicConfig(level=logging.DEBUG,
+logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - %(levelname)s - %(message)s"
                     )
 
