@@ -17,6 +17,8 @@ from ..services import MinecraftServerController
 from ..server_log.state_manager import StateManager
 from ..server_log.log_watcher import start_watching, stop_watching
 
+#TODO:
+# Our Task is to fix the user_is_whitelisted decorator to work with @staticmethods and usual methods.
 
 def user_is_whitelisted(func):
     """Decorator to check if the user is allowed to execute a command."""
