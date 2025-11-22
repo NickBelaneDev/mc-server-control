@@ -64,18 +64,26 @@ class MinecraftServerController:
             return False
         return True
 
-    def kick_player(self, player: str):
-        """Kicks a player from the server."""
+    def kick_player(self, player: str) -> bool:
+        """Kicks a player from the server. Returns True on success."""
         command = f"kick {player}"
-        if not self.run_server_command(command):
+        if self.run_server_command(command):
+            logger.info(f"Player '{player}' kicked successfully.")
+            return True
+        else:
             logger.error(f"Failed to kick player: {player}")
-        logger.info(f"Player '{player}' kicked successfully.")
+            return False
 
-    def op_player(self, player: str):
+    def op_player(self, player: str) -> bool:
+        """Gives a player operator status. Returns True on success."""
         command = f"op {player}"
-        if not self.run_server_command(command):
+        if self.run_server_command(command):
+            logger.info(f"Player '{player}' is now an Operator.")
+            return True
+        else:
             logger.error(f"Failed to op player: {player}")
-        logger.info(f"Player '{player}' is now an Operator.")
+            return False
+
 
 if __name__ == "__main__":
     config = load_config()

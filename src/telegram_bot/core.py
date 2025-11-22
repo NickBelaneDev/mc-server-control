@@ -40,6 +40,8 @@ class TelegramBot:
         exit_handler = CommandHandler("exit", self.server_exit_command)
         status_handler = CommandHandler("status", self.server_status_command)
         cmd_handler = CommandHandler("cmd", self.server_cmd_command)
+        kick_handler = CommandHandler("kick", self.server_kick_command)
+        op_handler = CommandHandler("op", self.server_op_command)
 
         self.application.add_handler(start_handler)
         self.application.add_handler(stop_handler)
@@ -47,6 +49,8 @@ class TelegramBot:
         self.application.add_handler(exit_handler)
         self.application.add_handler(status_handler)
         self.application.add_handler(cmd_handler)
+        self.application.add_handler(kick_handler)
+        self.application.add_handler(op_handler)
 
     def run(self):
         """Run the bot."""
@@ -61,6 +65,8 @@ class TelegramBot:
             "/stop     - Stops the Minecraft server\n"
             "/status   - Shows the current server status\n"
             "/cmd      - Executes a command on the server (e.g. /cmd say Hello)\n"
+            "/kick     - Kicks a player from the server (e.g. /kick Notch)\n"
+            "/op       - Makes a player an operator (e.g. /op Notch)\n"
             "/exit     - Stops the server and the bot"
         )
         await context.bot.send_message(
@@ -202,6 +208,66 @@ class TelegramBot:
             await context.bot.send_message(chat_id=chat_id, text="✅ Command executed successfully.")
         else:
             await context.bot.send_message(chat_id=chat_id, text="❌ Failed to execute command. Is the server running correctly?")
+
+    @staticmethod
+    async def server_kick_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Kicks a player from the server."""
+        chat_id = update.effective_chat.id
+        msc: MinecraftServerController = context.bot_data["msc"]
+
+        if not msc.is_running:
+            await context.bot.send_message(chat_id=chat_id, text="🔴 Server is not running.")
+            return
+
+        if not context.args:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="Please provide a player name to kick.\nExample: `/kick Notch`",
+                parse_mode='MarkdownV2'
+            )
+            return
+
+        player_name = context.args[0]
+        await context.bot.send_message(chat_id=chat_id, text=f"Attempting to kick player `{player_name}`...", parse_mode='MarkdownV2')
+
+        success = await asyncio.to_thread(msc.kick_player, player_name)
+
+        if success:
+            await context.bot.send_message(chat_id=chat_id, text=f"✅ Player `{player_name}` kicked.", parse_mode='MarkdownV2')
+        else:
+            await context.bot.send_message(chat_id=chat_id, text=f"❌ Failed to kick player `{player_name}`.", parse_mode='MarkdownV2')
+
+    @staticmethod
+    async def server_op_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Gives a player operator status."""
+        chat_id = update.effective_chat.id
+        msc: MinecraftServerController = context.bot_data["msc"]
+
+        if not msc.is_running:
+            await context.bot.send_message(chat_id=chat_id, text="🔴 Server is not running.")
+            return
+
+        if not context.args:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="Please provide a player name to op.\nExample: `/op Notch`",
+                parse_mode='MarkdownV2'
+            )
+            return
+
+        player_name = context.args[0]
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"Attempting to grant operator status to `{player_name}`...",
+            parse_mode='MarkdownV2'
+        )
+
+        success = await asyncio.to_thread(msc.op_player, player_name)
+
+        if success:
+            await context.bot.send_message(chat_id=chat_id, text=f"✅ Player `{player_name}` is now an operator.", parse_mode='MarkdownV2')
+        else:
+            await context.bot.send_message(chat_id=chat_id, text=f"❌ Failed to grant operator status to `{player_name}`.", parse_mode='MarkdownV2')
 
     async def server_exit_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Stops the bot gracefully. The main.py finally block will handle server shutdown."""
