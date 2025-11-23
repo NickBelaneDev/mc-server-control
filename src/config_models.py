@@ -30,6 +30,11 @@ class ServerConfig(BaseModel):
     max_gb: int = Field(..., ge=1, le=12)
     screen_name: str
     log_file: str = "logs/latest.log"
+    
+    # RCON Settings
+    rcon_host: str = "localhost"
+    rcon_port: int = 25575
+    rcon_password: str
 
     @model_validator(mode="after")
     def ensure_order(self):
@@ -56,6 +61,14 @@ class ServerConfig(BaseModel):
             return v
         else:
             raise ValueError(f"{v} Could not be found! Check your 'config.toml' and make sure to enter an existing directory.")
+
+    @field_validator("rcon_password")
+    @classmethod
+    def validate_rcon_password(cls, v: str) -> str:
+        """Validates that the RCON password is not empty."""
+        if not v:
+            raise ValueError("The 'rcon_password' cannot be empty. Please set it in your 'config.toml'.")
+        return v
 
     @property
     def full_log_path(self) -> Path:
@@ -89,4 +102,5 @@ if __name__ == "__main__":
                 min_gb=5, # Test
                 dir="C:/Users",
                 jar="paper.j",
-                screen_name="Lustiger Screen")
+                screen_name="Lustiger Screen",
+                rcon_password="test_password")

@@ -1,4 +1,3 @@
-import os
 import asyncio
 from functools import wraps
 
@@ -212,10 +211,10 @@ class TelegramBot:
             context.bot_data["watchdog_observer"] = None
 
         success = await asyncio.to_thread(msc.stop)
-
+        msg = "Server Stopped" if success else "Failed to stop server"
         await context.bot.send_message(
             chat_id=chat_id,
-            text="Server Stopped!"
+            text=msg
         )
 
     @staticmethod

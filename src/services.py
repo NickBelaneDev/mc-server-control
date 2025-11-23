@@ -1,22 +1,25 @@
 import subprocess
-
-from .config_loader import load_config
-from .config_models import ServerConfig
 import logging
-logger = logging.getLogger(__name__)
-from .terminal_service import run_commands, get_all_running_screens
+from mcrcon import MCRcon, MCRconException
 
+from .config_models import ServerConfig
+from .terminal_service import run_commands, get_all_running_screens
 from .server_commands import ServerCommand
+
+logger = logging.getLogger(__name__)
 
 class MinecraftServerController:
     def __init__(self, server_config: ServerConfig):
         self.config = server_config
+        self.rcon = MCRcon(
+            host=self.config.rcon_host,
+            port=self.config.rcon_port,
+            password=self.config.rcon_password
+        )
 
     def _compose_server_start_command(self) -> list:
-        """Returns a String of the start command for a server."""
-        return ["screen",
-                "-dmS", self.config.screen_name,
-                *self.config.java_command]
+        """Returns a list of the start command arguments for a server."""
+        return ["screen", "-dmS", self.config.screen_name, *self.config.java_command]
 
     @property
     def screen_name(self) -> str:
@@ -24,71 +27,65 @@ class MinecraftServerController:
 
     @property
     def is_running(self) -> bool:
-        """Checks if a screen session with the configured name is currently running."""
-        return self.config.screen_name in get_all_running_screens()
-
-    @property
-    def java_command(self) -> list:
-        return self.config.java_command
+        """
+        Checks if the server is running by attempting an RCON connection.
+        This is more reliable than checking for a screen session.
+        """
+        try:
+            self.rcon.connect()
+            self.rcon.disconnect()
+            return True
+        except MCRconException:
+            return False
+        except ConnectionRefusedError: # Also catch if the port is not even open
+            return False
 
     def start(self):
-        """Starts the Minecraft Server"""
+        """Starts the Minecraft Server in a screen session."""
+        if self.screen_name in get_all_running_screens():
+            logger.warning(f"A screen session named '{self.screen_name}' is already running. "
+                           f"Assuming server is already starting or running.")
+            return
+            
         server_start_command = self._compose_server_start_command()
         logger.info(">> Launching the server...")
-        #logger.info(f"- server_start_command = {" ".join(server_start_command)}")
         try:
             run_commands(server_start_command, self.config.dir)
-            logger.info("Server is running...")
+            logger.info(f"Server process started in screen session '{self.screen_name}'.")
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
-            logger.exception("Could not start the server! Check your 'config.toml' values and ensure 'screen' is installed.")
+            logger.exception("Could not start the server! Check your 'config.toml' and ensure 'screen' is installed.")
             raise e
 
     def stop(self) -> bool:
-        """Stops the Minecraft server and returns True on success, False on failure."""
-        logger.info(">> Stopping the server...")
-        # Later on we will create Enum classes for this
+        """Stops the Minecraft server using an RCON command."""
+        logger.info(">> Sending stop command to the server via RCON...")
         return self.run_server_command(ServerCommand.STOP.value)
 
-    def run_server_command(self, command: str) -> bool:
-        """Run a minecraft server command through the console."""
+    def run_server_command(self, command: str) -> bool | str:
+        """Runs a command on the Minecraft server via RCON."""
         if not isinstance(command, str):
-            raise TypeError("Command must be a string.")
-        
-        if not command.endswith("\n"):
-            command += "\n"
+            logger.error("Invalid command type. Command must be a string.")
+            return False
         
         try:
-            _cmd = ["screen", "-S", self.config.screen_name, "-X", "stuff", command]
-            run_commands(_cmd)
-            logger.info(f"Command '{command.strip()}' executed successfully.")
-        except subprocess.CalledProcessError:
-            logger.error(f"Failed to run server command: {command.strip()}. Is the screen session running?")
+            self.rcon.connect()
+            response = self.rcon.command(command)
+            logger.info(f"Command '{command.strip()}' executed via RCON. Response: {response}")
+            self.rcon.disconnect()
+            return response
+        except MCRconException as e:
+            logger.error(f"Failed to execute RCON command '{command.strip()}': {e}")
             return False
-        return True
+        except ConnectionRefusedError:
+            logger.error(f"RCON connection refused. Is the server running and is RCON configured correctly?")
+            return False
 
     def kick_player(self, player: str) -> bool:
         """Kicks a player from the server. Returns True on success."""
         command = f"{ServerCommand.KICK.value} {player}"
-        if self.run_server_command(command):
-            logger.info(f"Player '{player}' kicked successfully.")
-            return True
-        else:
-            logger.error(f"Failed to kick player: {player}")
-            return False
+        return self.run_server_command(command)
 
     def op_player(self, player: str) -> bool:
         """Gives a player operator status. Returns True on success."""
         command = f"{ServerCommand.OP.value} {player}"
-        if self.run_server_command(command):
-            logger.info(f"Player '{player}' is now an Operator.")
-            return True
-        else:
-            logger.error(f"Failed to op player: {player}")
-            return False
-
-
-if __name__ == "__main__":
-    config = load_config().mc
-
-    server_controller = MinecraftServerController(config)
-    server_controller.stop()
+        return self.run_server_command(command)
