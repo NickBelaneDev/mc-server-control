@@ -15,11 +15,16 @@ class TelegramBot:
         self.msc = msc
         self.state_manager = state_manager
         self.config = config
-        self.application = Application.builder().token(token).build()
+        self.application = (
+            Application.builder()
+            .token(token)
+            .post_init(self._post_init)
+            .build()
+        )
         
         self._setup_bot_data()
         self._add_handlers()
-        self._register_callbacks()
+        # _register_callbacks() is now called from _post_init
 
     def _setup_bot_data(self):
         """Stores shared components in bot_data for easy access in handlers."""
@@ -47,12 +52,12 @@ class TelegramBot:
         
         logger.info("All command handlers have been registered.")
 
-    def _register_callbacks(self):
+    def _register_callbacks(self, loop: asyncio.AbstractEventLoop):
         """Registers callbacks for server events, like the 'ready' signal."""
         self.state_manager.register_ready_callback(self.on_server_ready)
         # Pass the event loop to the state manager for safe async callbacks
-        if self.application.loop:
-            self.state_manager.set_event_loop(self.application.loop)
+        self.state_manager.set_event_loop(loop)
+        logger.info("Server-ready callback and event loop have been registered with the StateManager.")
 
     async def on_server_ready(self):
         """Async callback triggered by StateManager when the server is ready."""
@@ -77,3 +82,9 @@ class TelegramBot:
             # Use a small delay to ensure RCON is ready
             await asyncio.sleep(2)
             await asyncio.to_thread(self.msc.run_server_command, "list")
+
+    async def _post_init(self, app: Application) -> None:
+        """Post-initialization hook to set up async components."""
+        loop = asyncio.get_running_loop()
+        self._register_callbacks(loop)
+        logger.info("Async components initialized via post_init.")
