@@ -4,7 +4,7 @@ from typing import Union
 
 from pydantic import ValidationError
 
-from .command_models import KickPlayerCommand, OpPlayerCommand, BaseCommandModel
+from .command_models import KickPlayerCommand, OpPlayerCommand, BaseCommandModel, StopCommand
 from .services import MinecraftServerController
 
 logger = logging.getLogger(__name__)
@@ -49,4 +49,15 @@ class CommandService:
             return await self._execute_command(command_model)
         except ValidationError as e:
             logger.error(f"Op command validation failed for player '{player_name}': {e}")
+            return False
+
+    async def stop(self) -> bool:
+        """Stops the server."""
+        try:
+            command_model = StopCommand()
+            await self._execute_command(command_model)
+            logger.info("Server stopped successfully.")
+            return True
+        except ValidationError as e:
+            logger.error(f"Failed to validate the stop command: {e}")
             return False

@@ -30,3 +30,9 @@ class OpPlayerCommand(BaseCommandModel):
     def to_command_string(self) -> str:
         """Returns the formatted op command string."""
         return f"{ServerCommand.OP.value} {self.player_name}"
+
+class StopCommand(BaseCommandModel):
+    """Model for the 'stop' command."""
+    def to_command_string(self) -> str:
+        """Returns the formatted stop command string."""
+        return f"{ServerCommand.STOP.value}"
