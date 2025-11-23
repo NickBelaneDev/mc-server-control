@@ -5,7 +5,7 @@ import asyncio
 from dotenv import load_dotenv, find_dotenv
 
 from src.config_loader import load_config
-from src.services import MinecraftServerController
+from src.mc_service.services import MinecraftServerController
 from src.server_log.state_manager import StateManager
 from src.telegram_bot.core import TelegramBot
 from src.server_log.log_watcher import stop_watching
@@ -33,23 +33,14 @@ async def main():
     bot = TelegramBot(token=_TOKEN, msc=msc, state_manager=state_manager, config=config)
     
     try:
-        await bot.application.initialize() # Runs post_init
         await bot.initial_state_sync()
-        await bot.application.start()
-        await bot.application.updater.start_polling()
-        # Keep the script running until shutdown is signaled
-        while bot.application.updater._running:
-            await asyncio.sleep(1)
+        # This will run the bot until stop_running() is called (e.g., by /exit or Ctrl+C)
+        await bot.application.run_polling()
             
     except (KeyboardInterrupt, SystemExit):
         logger.info("Shutdown signal received. Stopping services...")
     
     finally:
-        if bot.application.updater and bot.application.updater._running:
-            await bot.application.updater.stop()
-        if bot.application.running:
-            await bot.application.stop()
-            
         # Ensure a clean shutdown of the Minecraft server and watchdog
         if msc.is_running:
             logger.info("Minecraft server is running, initiating shutdown.")

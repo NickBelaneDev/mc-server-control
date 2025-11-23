@@ -7,10 +7,10 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.helpers import escape_markdown
 
+from src.mc_service.command_service import CommandService
 from ..config_models import AppConfig
-from ..services import MinecraftServerController
+from src.mc_service.services import MinecraftServerController
 from ..server_log.state_manager import StateManager
-from ..server_commands import ServerCommand
 from ..server_log.log_watcher import start_watching, stop_watching
 
 logger = logging.getLogger(__name__)
@@ -167,16 +167,19 @@ async def server_cmd_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 @require_args(1, "Please provide a player name to kick\\. Example: `/kick Notch`")
 async def server_kick_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Kicks a player from the server."""
-    msc: MinecraftServerController = context.bot_data["msc"]
+    command_service: CommandService = context.bot_data["command_service"]
     player_name = context.args[0]
     escaped_player_name = escape_markdown(player_name, version=2)
     
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Attempting to kick `{escaped_player_name}`\\.\\.\\.", parse_mode='MarkdownV2')
     
-    command = f"{ServerCommand.KICK.value} {player_name}"
-    response = await asyncio.to_thread(msc.run_server_command, command)
+    response = await command_service.kick_player(player_name)
     if response is not False:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"✅ Kick command sent for `{escaped_player_name}`\\.\nServer response: `{response}`", parse_mode='MarkdownV2')
+        response_text = escape_markdown(response, version=2) if response else "No response from server\\."
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"✅ Kick command sent for `{escaped_player_name}`\\.\n\n*Server Response:*\n`{response_text}`",
+            parse_mode='MarkdownV2')
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to kick player `{escaped_player_name}`\\.", parse_mode='MarkdownV2')
 
@@ -185,16 +188,19 @@ async def server_kick_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 @require_args(1, "Please provide a player name to op\\. Example: `/op Notch`")
 async def server_op_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Gives a player operator status."""
-    msc: MinecraftServerController = context.bot_data["msc"]
+    command_service: CommandService = context.bot_data["command_service"]
     player_name = context.args[0]
     escaped_player_name = escape_markdown(player_name, version=2)
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Granting operator status to `{escaped_player_name}`\\.\\.\\.", parse_mode='MarkdownV2')
 
-    command = f"{ServerCommand.OP.value} {player_name}"
-    response = await asyncio.to_thread(msc.run_server_command, command)
+    response = await command_service.op_player(player_name)
     if response is not False:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"✅ OP command sent for `{escaped_player_name}`\\.\nServer response: `{response}`", parse_mode='MarkdownV2')
+        response_text = escape_markdown(response, version=2) if response else "No response from server\\."
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"✅ OP command sent for `{escaped_player_name}`\\.\n\n*Server Response:*\n`{response_text}`",
+            parse_mode='MarkdownV2')
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to grant operator status to `{escaped_player_name}`\\.", parse_mode='MarkdownV2')
 

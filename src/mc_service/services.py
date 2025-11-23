@@ -2,8 +2,8 @@ import subprocess
 import logging
 from mcrcon import MCRcon, MCRconException
 
-from .config_models import ServerConfig
-from .terminal_service import run_commands, get_all_running_screens
+from src.config_models import ServerConfig
+from src.terminal_service import run_commands, get_all_running_screens
 from .server_commands import ServerCommand
 
 logger = logging.getLogger(__name__)

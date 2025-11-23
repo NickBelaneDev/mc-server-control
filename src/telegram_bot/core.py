@@ -3,10 +3,11 @@ import logging
 
 from telegram.ext import Application, CommandHandler
 
+from src.mc_service.command_service import CommandService
 from ..config_models import AppConfig
-from ..services import MinecraftServerController
+from src.mc_service.services import MinecraftServerController
 from ..server_log.state_manager import StateManager
-from . import handlers  # Import the new handlers module
+from . import handlers
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class TelegramBot:
         self.application.bot_data["msc"] = self.msc
         self.application.bot_data["state_manager"] = self.state_manager
         self.application.bot_data["config"] = self.config
+        self.application.bot_data["command_service"] = CommandService(self.msc)
         self.application.bot_data["watchdog_observer"] = None  # To hold the log watcher instance
         self.application.bot_data["last_chat_id"] = None  # To notify the user who started the server
 
@@ -78,7 +80,12 @@ class TelegramBot:
         This is useful if the bot is restarted while the server is already running.
         """
         if self.msc.is_running:
-            logger.info("Server is already running on bot startup. Requesting player list to sync state.")
+            logger.info("Server is already running on bot startup. Starting log watcher and syncing state.")
+            # Start watching logs for live updates
+            observer = handlers.start_watching(str(self.config.mc.full_log_path), self.state_manager)
+            self.application.bot_data["watchdog_observer"] = observer
+
+            # Request player list to get an initial state
             # Use a small delay to ensure RCON is ready
             await asyncio.sleep(2)
             await asyncio.to_thread(self.msc.run_server_command, "list")
