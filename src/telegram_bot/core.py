@@ -77,8 +77,3 @@ class TelegramBot:
             # Use a small delay to ensure RCON is ready
             await asyncio.sleep(2)
             await asyncio.to_thread(self.msc.run_server_command, "list")
-
-    def run(self):
-        """Starts the polling loop for the Telegram bot."""
-        logger.info("Bot is starting up and polling for messages...")
-        self.application.run_polling()
