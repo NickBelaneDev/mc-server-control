@@ -49,7 +49,7 @@ async def main():
     
     finally:
         # Gracefully stop the bot's updater and application
-        if bot.application.updater and bot.application.updater.is_running:
+        if bot.application.updater and bot.application.updater._running:
             await bot.application.updater.stop()
         if bot.application.running:
             await bot.application.stop()
