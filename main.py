@@ -30,6 +30,7 @@ async def main():
     msc = MinecraftServerController(config.mc)
     state_manager = StateManager()
     
+    shutdown_event = asyncio.Event()
     bot = TelegramBot(token=_TOKEN, msc=msc, state_manager=state_manager, config=config)
     
     try:
@@ -37,12 +38,14 @@ async def main():
         await bot.application.initialize()
         # Sync state if the server is already running
         await bot.initial_state_sync()
+        # Store the shutdown event in bot_data for handlers to access
+        bot.application.bot_data["shutdown_event"] = shutdown_event
         # Start the bot in the background
         await bot.application.start()
         # Start polling for updates
         await bot.application.updater.start_polling()
         # Keep the main coroutine alive until a shutdown is signaled
-        await asyncio.Event().wait()
+        await shutdown_event.wait()
             
     except (KeyboardInterrupt, SystemExit):
         logger.info("Shutdown signal received. Stopping services...")

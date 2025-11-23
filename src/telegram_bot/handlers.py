@@ -207,13 +207,14 @@ async def server_op_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 @user_is_whitelisted
 async def server_exit_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Stops the bot and the server gracefully."""
-    command_service: CommandService = context.bot_data["command_service"]
     logger.info("Received /exit command. Initiating graceful shutdown.")
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Shutting down the bot and server...")
     
-    # Signal the main loop to exit
-    shutdown_event: asyncio.Event = context.bot_data.get("shutdown_event")
+    # Stop the Minecraft server first
+    command_service: CommandService = context.bot_data["command_service"]
     await command_service.stop()
 
+    # Signal the main loop to exit
+    shutdown_event: asyncio.Event = context.bot_data.get("shutdown_event")
     if shutdown_event:
         shutdown_event.set()
