@@ -38,14 +38,14 @@ async def main():
         await bot.application.start()
         await bot.application.updater.start_polling()
         # Keep the script running until shutdown is signaled
-        while bot.application.updater.is_running:
+        while bot.application.updater._running:
             await asyncio.sleep(1)
             
     except (KeyboardInterrupt, SystemExit):
         logger.info("Shutdown signal received. Stopping services...")
     
     finally:
-        if bot.application.updater.is_running:
+        if bot.application.updater and bot.application.updater._running:
             await bot.application.updater.stop()
         if bot.application.running:
             await bot.application.stop()
