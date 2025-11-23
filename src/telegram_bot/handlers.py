@@ -210,5 +210,7 @@ async def server_exit_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     logger.info("Received /exit command. Initiating graceful shutdown.")
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Shutting down the bot and server...")
     
-    # This signals run_polling() to stop. The cleanup logic in main.py will handle the rest.
-    context.application.stop_running()
+    # Signal the main loop to exit
+    shutdown_event: asyncio.Event = context.bot_data.get("shutdown_event")
+    if shutdown_event:
+        shutdown_event.set()

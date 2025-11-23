@@ -35,6 +35,7 @@ class TelegramBot:
         self.application.bot_data["command_service"] = CommandService(self.msc)
         self.application.bot_data["watchdog_observer"] = None  # To hold the log watcher instance
         self.application.bot_data["last_chat_id"] = None  # To notify the user who started the server
+        self.application.bot_data["shutdown_event"] = asyncio.Event() # For graceful shutdown
 
     def _add_handlers(self):
         """Creates and registers all command handlers for the bot."""
