@@ -8,7 +8,7 @@ screen_name = "minecraft_server" # Choose a custom name for the screen
 log_file = "logs/latest.log" # Relative path to the log file from the server directory
 rcon_host = "localhost"
 rcon_port = 25575
-rcon_password = "Test1234"
+rcon_password = "Your Password"
 # ---------- Telegram Bot Configuration -------------
 [bot]
 # A list of Telegram Chat IDs that are allowed to use this bot.
