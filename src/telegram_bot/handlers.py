@@ -218,3 +218,5 @@ async def server_exit_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     shutdown_event: asyncio.Event = context.bot_data.get("shutdown_event")
     if shutdown_event:
         shutdown_event.set()
+
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Server is offline! Bye!")
