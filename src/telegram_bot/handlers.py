@@ -150,8 +150,15 @@ async def server_cmd_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     escaped_command = escape_markdown(command_to_run, version=2)
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Executing: `{escaped_command}`", parse_mode='MarkdownV2')
     
-    if await asyncio.to_thread(msc.run_server_command, command_to_run):
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="✅ Command executed.")
+    response = await asyncio.to_thread(msc.run_server_command, command_to_run)
+
+    if response is not False:
+        # An empty response is a valid success case (e.g., for /say)
+        if response:
+            escaped_response = escape_markdown(response, version=2)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🖥️ *Server Response:*\n`{escaped_response}`", parse_mode='MarkdownV2')
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="✅ Command executed successfully (no response from server).")
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Failed to execute command.")
 
