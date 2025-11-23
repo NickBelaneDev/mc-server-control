@@ -79,13 +79,3 @@ class MinecraftServerController:
         except ConnectionRefusedError:
             logger.error(f"RCON connection refused. Is the server running and is RCON configured correctly?")
             return False
-
-    def kick_player(self, player: str) -> bool:
-        """Kicks a player from the server. Returns True on success."""
-        command = f"{ServerCommand.KICK.value} {player}"
-        return self.run_server_command(command)
-
-    def op_player(self, player: str) -> bool:
-        """Gives a player operator status. Returns True on success."""
-        command = f"{ServerCommand.OP.value} {player}"
-        return self.run_server_command(command)
