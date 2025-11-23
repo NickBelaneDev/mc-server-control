@@ -66,13 +66,13 @@ def require_args(count: int, message: str) -> Callable:
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Displays a list of available commands."""
     help_text = (
-        "/start    - Starts the Minecraft server\n"
-        "/stop     - Stops the Minecraft server\n"
-        "/status   - Shows the current server status\n"
-        "/cmd      - Executes a command on the server \\(e\\.g\\., `/cmd say Hello`\\)\n"
-        "/kick     - Kicks a player \\(e\\.g\\., `/kick Notch`\\)\n"
-        "/op       - Makes a player an operator \\(e\\.g\\., `/op Notch`\\)\n"
-        "/exit     - Stops the server and the bot"
+        "/start    \\- Starts the Minecraft server\n"
+        "/stop     \\- Stops the Minecraft server gracefully\n"
+        "/status   \\- Shows the current server status and player list\n"
+        "/cmd      \\- Executes a command on the server \\(e\\.g\\., `/cmd say Hello`\\)\n"
+        "/kick     \\- Kicks a player \\(e\\.g\\., `/kick Notch`\\)\n"
+        "/op       \\- Grants operator status to a player \\(e\\.g\\., `/op Notch`\\)\n"
+        "/exit     \\- Stops the server and the bot"
     )
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
