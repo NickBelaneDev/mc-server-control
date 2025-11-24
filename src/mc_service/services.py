@@ -1,5 +1,6 @@
 import logging
 from mcrcon import MCRcon, MCRconException
+from contextlib import contextmanager
 from enum import Enum, auto
 
 from src.config_models import ServerConfig
@@ -28,6 +29,19 @@ class MinecraftServerController:
             screen_name=self.config.screen_name
         )
 
+    @contextmanager
+    def rcon_connection(self):
+        """A context manager for handling RCON connections."""
+        try:
+            self.rcon.connect()
+            yield self.rcon
+        except (MCRconException, ConnectionRefusedError) as e:
+            logger.error(f"RCON connection failed: {e}")
+            # Re-raise the specific exception to be handled by the caller
+            raise
+        finally:
+            self.rcon.disconnect()
+
     @property
     def screen_name(self) -> str:
         return self.config.screen_name
@@ -39,32 +53,38 @@ class MinecraftServerController:
         This is more reliable than checking for a screen session.
         """
         try:
-            self.rcon.connect()
-            self.rcon.disconnect()
+            with self.rcon_connection():
+                pass  # Connection successful if no exception is raised
             return True
-        except MCRconException:
-            return False
-        except ConnectionRefusedError: # Also catch if the port is not even open
+        except (MCRconException, ConnectionRefusedError):
             return False
 
     def get_server_status(self) -> ServerStatus:
         """
         Provides a comprehensive status of the server.
-
+ 
         Returns:
             ServerStatus: The current status (STOPPED, RUNNING, STARTING, CRASHED).
         """
         process_running = self.process_service.is_process_running()
         rcon_responsive = self.is_running
-
+ 
+        # A process can be running but not yet accepting RCON connections (starting).
+        # Or it can be running but RCON is unresponsive (crashed/frozen).
+        # We can add a timeout check to distinguish STARTING from CRASHED.
+        # For now, this logic is a reasonable approximation.
         if process_running and rcon_responsive:
             return ServerStatus.RUNNING
         elif process_running and not rcon_responsive:
-            return ServerStatus.STARTING
+            # If the process has been running for a long time, it might be CRASHED.
+            # A simple heuristic: if it's been up for > 5 mins, it's not starting.
+            if self.process_service.get_process_uptime() > 300:
+                return ServerStatus.CRASHED
+            return ServerStatus.STARTING # Assumed to be starting up.
         elif not process_running and self.process_service.get_pid() is not None:
             return ServerStatus.CRASHED
         else: # not process_running and no pid file
-            return ServerStatus.STOPPED
+            return ServerStatus.STOPPED # No process and no lingering PID file.
 
     def start(self):
         """Starts the Minecraft Server in a screen session."""
@@ -73,14 +93,14 @@ class MinecraftServerController:
                            f"Assuming server is already started.")
             return
 
-        # Clean up old PID file if it exists and the process is dead
-        self.process_service.remove_pid_file()
+        # Clean up old PID file if it exists from a previous crashed session
+        if not self.process_service.is_process_running():
+            self.process_service.remove_pid_file()
 
         self.process_service.start_process(self.config.java_command)
 
     def stop(self) -> bool:
         """Stops the Minecraft server using an RCON command."""
-        logger.info(">> Sending stop command to the server via RCON...")
         response = self.run_server_command(ServerCommand.STOP.value)
         self.process_service.remove_pid_file() # Clean up PID file after stopping
         return bool(response)
@@ -91,15 +111,15 @@ class MinecraftServerController:
             logger.error("Invalid command type. Command must be a string.")
             return False
         
-        try:
-            self.rcon.connect()
-            response = self.rcon.command(command)
-            logger.info(f"Command '{command.strip()}' executed via RCON. Response: {response}")
-            self.rcon.disconnect()
-            return response
-        except MCRconException as e:
-            logger.error(f"Failed to execute RCON command '{command.strip()}': {e}")
+        if not self.is_running:
+            logger.error(f"Cannot run command. Server is not running or RCON is unavailable.")
             return False
-        except ConnectionRefusedError:
-            logger.error(f"RCON connection refused. Is the server running and is RCON configured correctly?")
+
+        try:
+            with self.rcon_connection() as rcon:
+                response = rcon.command(command)
+                logger.info(f"Command '{command.strip()}' executed. Response: {response}")
+                return response
+        except (MCRconException, ConnectionRefusedError) as e:
+            logger.error(f"Failed to execute RCON command '{command.strip()}': {e}")
             return False
