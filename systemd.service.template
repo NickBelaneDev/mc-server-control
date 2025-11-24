@@ -1,0 +1,55 @@
+# Minecraft Server Controller systemd Service File
+#
+# 1. Edit the User and WorkingDirectory fields below.
+# 2. Copy this file to /etc/systemd/system/mc-bot.service
+#    sudo cp mc-bot.service.template /etc/systemd/system/mc-bot.service
+# 3. Reload systemd to recognize the new service:
+#    sudo systemctl daemon-reload
+# 4. Enable the service to start on boot:
+#    sudo systemctl enable mc-bot.service
+# 5. Start the service now:
+#    sudo systemctl start mc-bot.service
+#
+# You can check the status and logs with:
+# journalctl -u mc-bot.service -f
+
+[Unit]
+Description=Minecraft Server Controller Bot
+After=network.target
+
+[Service]
+# --- EDIT THIS ---
+# The user that will run the bot. This user needs read/write access to the project directory.
+# Example: User=pi
+User=<YOUR_USER>
+
+# --- EDIT THIS ---
+# The absolute path to the project's root directory.
+# Example: WorkingDirectory=/srv/mc-server-control
+WorkingDirectory=<ABSOLUTE_PATH_TO_PROJECT>
+
+# The start command, using the Python executable from the virtual environment.
+# This path is relative to the WorkingDirectory and should not need changes
+# if you followed the setup instructions.
+ExecStart=${WORKING_DIRECTORY}/.venv/bin/python ${WORKING_DIRECTORY}/main.py
+
+# Restart the service only if it exits with a non-zero status code (on failure).
+Restart=on-failure
+RestartSec=10
+
+# Redirect stdout and stderr to the systemd journal for easy logging.
+StandardOutput=journal
+StandardError=journal
+
+# Specifies the kill signal and a timeout for a graceful shutdown.
+# The main.py script is designed to handle SIGTERM gracefully.
+KillSignal=SIGTERM
+TimeoutStopSec=60
+
+# By default, systemd might kill all processes spawned by the service.
+# 'KillMode=process' ensures that only the main Python process is killed on stop,
+# leaving the 'screen' session for the Minecraft server running independently.
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
