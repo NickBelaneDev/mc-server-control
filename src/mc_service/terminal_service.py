@@ -2,6 +2,7 @@ import subprocess
 import logging
 import os
 import psutil
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,20 @@ class ScreenProcessService:
         """Checks if the server process is running based on the PID file."""
         pid = self.get_pid()
         return psutil.pid_exists(pid) if pid else False
+
+    def get_process_uptime(self) -> float:
+        """
+        Returns the uptime of the managed process in seconds.
+        Returns 0.0 if the process is not running or PID is not found.
+        """
+        pid = self.get_pid()
+        if not pid or not psutil.pid_exists(pid):
+            return 0.0
+        try:
+            process = psutil.Process(pid)
+            return time.time() - process.create_time()
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            return 0.0
 
     def start_process(self, command: list[str]):
         """
