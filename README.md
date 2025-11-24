@@ -1,16 +1,18 @@
 
 # 🤖 Minecraft Server Telegram Controller
 
-A simple Python bot to manage your Minecraft server via Telegram. Start, stop, and check the status of your server from anywhere. Perfect for headless Linux servers.
+A Python bot to manage your Minecraft server via Telegram. Start, stop, and check the status of your server from anywhere. Designed for headless Linux servers and can run as a `systemd` service for maximum reliability.
 
  <!-- It's a good idea to add a small GIF showing the bot in action! -->
 
 ## ✨ Features
 
 -   **🚀 Remote Control:** Start and stop your server with simple commands.
--   **📊 Live Status:** Get real-time status, including ready state, uptime, and a live player list.
+-   **📊 Live Status:** Get real-time status, including server state, uptime, and a live player list.
 -   **⚙️ Direct Command Execution:** Run any command on your server console directly from Telegram (e.g., `/cmd whitelist add <player>`).
--   **⚙️ Background Operation:** Uses `screen` to run the server reliably in the background.
+-   **🛡️ Robust Background Operation:**
+    -   Uses `screen` to run the Minecraft server process reliably.
+    -   The bot itself can run as a `systemd` service for automatic startup and management.
 -   **📝 Easy Configuration:** Simple setup using a `config.toml` file.
 -   **🔒 Secure:** Uses a `.env` file for your private bot token.
 
@@ -66,9 +68,60 @@ A simple Python bot to manage your Minecraft server via Telegram. Start, stop, a
     allowed_chat_ids = [123456789] # Example
     ```
 
-5.  **Run the bot:**
+5.  **Run the bot for testing:**
     ```bash
     python main.py
+    ```
+    The bot will start polling. You can stop it with `Ctrl+C`. For permanent use, see the next section.
+
+## ⚙️ Running as a Service (Recommended for Linux)
+
+Running the bot as a `systemd` service ensures it starts automatically on boot and restarts if it ever crashes.
+
+1.  **Create a service file:**
+    Create a new service file for `systemd`:
+    ```bash
+    sudo nano /etc/systemd/system/mc-bot.service
+    ```
+
+2.  **Add the service configuration:**
+    Paste the following content into the file. **Important:** Replace `your_user`, `/path/to/your/minecraft-server`, and the `ExecStart` path with your actual username and absolute paths.
+
+    ```ini
+    [Unit]
+    Description=Minecraft Server Telegram Bot
+    After=network.target
+
+    [Service]
+    # Replace with the user that should run the bot
+    User=your_user
+    Group=your_user
+
+    # Replace with the absolute path to the project directory
+    WorkingDirectory=/path/to/your/minecraft-server
+
+    # Replace with the absolute path to the python executable in your venv
+    ExecStart=/path/to/your/minecraft-server/.venv/bin/python main.py
+    
+    Restart=always
+    RestartSec=5
+
+    [Install]
+    WantedBy=multi-user.target
+    ```
+
+3.  **Enable and start the service:**
+    ```bash
+    sudo systemctl daemon-reload         # Reload systemd to recognize the new service
+    sudo systemctl enable mc-bot.service # Enable the service to start on boot
+    sudo systemctl start mc-bot.service  # Start the service now
+    ```
+
+4.  **Check the status:**
+    You can check if the service is running correctly and view its logs:
+    ```bash
+    sudo systemctl status mc-bot.service
+    journalctl -u mc-bot -f
     ```
 
 The bot will start polling. To stop everything, use the `/exit` command or press `Ctrl+C` in your terminal.
