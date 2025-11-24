@@ -59,21 +59,19 @@ class ScreenProcessService:
         """
         Starts the given command in a detached screen session and creates a PID file.
         """
-        java_command_str = subprocess.list2cmdline(command)
-        # The 'exec' replaces the shell process with the java process.
-        # The PID of the java process is written to the PID file using an absolute path
-        # to ensure it's created in the correct directory.
-        # The command is wrapped in a subshell `(...)`. The subshell is put in the background with `&`.
-        # `echo $!` then correctly captures the PID of the subshell (and thus the exec'd java process).
-        # This structure is more reliable than a simple `exec ... &`.
-        shell_command = f"cd '{self.working_dir}' && (exec {java_command_str} & echo $! > '{self._pid_file_path}')"
-        screen_command = ["screen", "-dmS", self.screen_name, "/bin/sh", "-c", shell_command]
+        # The command is now executed directly within the screen session.
+        screen_command = ["screen", "-dmS", self.screen_name] + command
 
         logger.info(">> Launching the process in a screen session...")
         try:
-            # The working directory is now handled inside the shell_command, so cwd is not needed here.
-            subprocess.run(screen_command, check=True)
-            logger.info(f"Process started in screen session '{self.screen_name}'.")
+            # Use Popen to start the process in the background and get its PID.
+            process = subprocess.Popen(screen_command, cwd=self.working_dir)
+            
+            # Write the PID to the PID file.
+            with open(self._pid_file_path, "w") as f:
+                f.write(str(process.pid))
+            
+            logger.info(f"Process started in screen session '{self.screen_name}' with PID {process.pid}.")
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
             logger.exception("Could not start the process! Check your config and ensure 'screen' is installed.")
             self.remove_pid_file()  # Clean up on failure
