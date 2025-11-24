@@ -63,9 +63,11 @@ class ScreenProcessService:
         # The 'exec' replaces the shell process with the java process.
         # The PID of the java process is written to the PID file using an absolute path
         # to ensure it's created in the correct directory.
-        # We must 'cd' into the working directory before executing the command.
-        shell_command = f"cd {self.working_dir} && exec {java_command_str} & echo $! > {self._pid_file_path}"
-        screen_command = ["screen", "-dmS", self.screen_name, "sh", "-c", shell_command]
+        # The command is wrapped in a subshell `(...)`. The subshell is put in the background with `&`.
+        # `echo $!` then correctly captures the PID of the subshell (and thus the exec'd java process).
+        # This structure is more reliable than a simple `exec ... &`.
+        shell_command = f"cd '{self.working_dir}' && (exec {java_command_str} & echo $! > '{self._pid_file_path}')"
+        screen_command = ["screen", "-dmS", self.screen_name, "/bin/sh", "-c", shell_command]
 
         logger.info(">> Launching the process in a screen session...")
         try:
