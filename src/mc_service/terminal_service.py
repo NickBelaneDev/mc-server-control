@@ -61,8 +61,9 @@ class ScreenProcessService:
         """
         java_command_str = subprocess.list2cmdline(command)
         # The 'exec' replaces the shell process with the java process.
-        # The PID of the java process is written to the PID file.
-        shell_command = f"exec {java_command_str} & echo $! > {self.screen_name}.pid"
+        # The PID of the java process is written to the PID file using an absolute path
+        # to ensure it's created in the correct directory.
+        shell_command = f"exec {java_command_str} & echo $! > {self._pid_file_path}"
         screen_command = ["screen", "-dmS", self.screen_name, "sh", "-c", shell_command]
 
         logger.info(">> Launching the process in a screen session...")
