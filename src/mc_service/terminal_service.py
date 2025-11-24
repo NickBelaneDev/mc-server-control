@@ -63,13 +63,14 @@ class ScreenProcessService:
         # The 'exec' replaces the shell process with the java process.
         # The PID of the java process is written to the PID file using an absolute path
         # to ensure it's created in the correct directory.
-        shell_command = f"exec {java_command_str} & echo $! > {self._pid_file_path}"
+        # We must 'cd' into the working directory before executing the command.
+        shell_command = f"cd {self.working_dir} && exec {java_command_str} & echo $! > {self._pid_file_path}"
         screen_command = ["screen", "-dmS", self.screen_name, "sh", "-c", shell_command]
 
         logger.info(">> Launching the process in a screen session...")
         try:
-            # We run the command from the server directory so the PID file is created there.
-            subprocess.run(screen_command, check=True, cwd=self.working_dir)
+            # The working directory is now handled inside the shell_command, so cwd is not needed here.
+            subprocess.run(screen_command, check=True)
             logger.info(f"Process started in screen session '{self.screen_name}'.")
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
             logger.exception("Could not start the process! Check your config and ensure 'screen' is installed.")
