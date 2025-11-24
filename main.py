@@ -9,7 +9,7 @@ from src.mc_service.services import MinecraftServerController
 from src.server_log.state_manager import StateManager
 from src.telegram_bot.core import TelegramBot
 from src.server_log.log_watcher import stop_watching
-
+from src.mc_service.server_commands import ServerCommand
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - %(levelname)s - %(message)s"
@@ -65,7 +65,7 @@ async def main():
             if observer:
                 stop_watching(observer)
             
-            await asyncio.to_thread(msc.stop)
+            await asyncio.to_thread(msc.run_server_command(ServerCommand.STOP.value))
             logger.info("Minecraft server stopped.")
         logger.info("Application has been shut down gracefully.")
 
