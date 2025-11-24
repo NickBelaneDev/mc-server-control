@@ -115,13 +115,16 @@ async def server_start_command(update: Update, context: ContextTypes.DEFAULT_TYP
         return
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Starting the server...")
-    await asyncio.to_thread(msc.start)
+    has_started = await asyncio.to_thread(msc.start)
 
     config: AppConfig = context.bot_data["config"]
     state_manager: StateManager = context.bot_data["state_manager"]
     observer = start_watching(str(config.mc.full_log_path), state_manager)
     context.bot_data["watchdog_observer"] = observer
     context.bot_data["last_chat_id"] = update.effective_chat.id
+
+    if has_started:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Server is online! 🚀")
 
 @user_is_whitelisted
 @require_server_running

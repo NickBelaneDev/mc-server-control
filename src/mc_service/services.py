@@ -40,18 +40,19 @@ class MinecraftServerController:
         except ConnectionRefusedError: # Also catch if the port is not even open
             return False
 
-    def start(self):
+    def start(self) -> bool|None:
         """Starts the Minecraft Server in a screen session."""
         if self.screen_name in get_all_running_screens():
             logger.warning(f"A screen session named '{self.screen_name}' is already running. "
                            f"Assuming server is already starting or running.")
-            return
+            return False
             
         server_start_command = self._compose_server_start_command()
         logger.info(">> Launching the server...")
         try:
             run_commands(server_start_command, self.config.dir)
             logger.info(f"Server process started in screen session '{self.screen_name}'.")
+            return True
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
             logger.exception("Could not start the server! Check your 'config.toml' and ensure 'screen' is installed.")
             raise e
