@@ -59,7 +59,10 @@ A Python bot to manage your Minecraft server via Telegram. Start, stop, and chec
     min_gb = 4                              # Minimum RAM
     max_gb = 4                              # Maximum RAM
     screen_name = "minecraft_server"        # Custom Screen name
-    log_file = "logs/latest.log"
+    log_file = "logs/latest.log"            # Default log file name
+    rcon_host = "localhost"                 # RCON server host
+    rcon_port = 25575                       # Your RCON port
+    rcon_password = "Your Password"         # Your RCON password
 
     # ---------- Telegram Bot Configuration -------------
     [bot]
@@ -67,6 +70,15 @@ A Python bot to manage your Minecraft server via Telegram. Start, stop, and chec
     # Get your ID from a bot like @userinfobot
     allowed_chat_ids = [123456789] # Example
     ```
+
+    -   **Enable RCON on your Minecraft server:**
+        In your Minecraft server's `server.properties` file, ensure RCON is enabled and the credentials match your `config.toml`:
+        ```properties
+        enable-rcon=true
+        rcon.port=25575
+        rcon.password=Your Password
+        ```
+        > **Note:** You must restart the Minecraft server for these changes to take effect.
 
 5.  **Run the bot for testing:**
     ```bash
