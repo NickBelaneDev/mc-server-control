@@ -55,10 +55,10 @@ A Python bot to manage your Minecraft server via Telegram. Start, stop, and chec
     # ---------- Minecraft Server Configuration -------------
     [mc]
     dir = "/home/user/minecraft/my_server"  # Absolute path to your server directory
-    jar = "paper-1.21-10.jar"               # The initial server.jar file
+    jar = "paper-1.21-10.jar"               # The initial server.jar file in your server directory
     min_gb = 4                              # Minimum RAM
     max_gb = 4                              # Maximum RAM
-    screen_name = "minecraft_server"        # Custom Screen name
+    screen_name = "minecraft_server"        # Custom Screen name. Make sure to use a unique name!
     log_file = "logs/latest.log"            # Default log file name
     rcon_host = "localhost"                 # RCON server host
     rcon_port = 25575                       # Your RCON port
