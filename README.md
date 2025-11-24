@@ -97,30 +97,9 @@ Running the bot as a `systemd` service ensures it starts automatically on boot a
     ```
 
 2.  **Add the service configuration:**
-    Paste the following content into the file. **Important:** Replace `your_user`, `/path/to/your/minecraft-server`, and the `ExecStart` path with your actual username and absolute paths.
+    Copy the content from the `service.template` file provided in this repository into the new service file.
 
-    ```ini
-    [Unit]
-    Description=Minecraft Server Telegram Bot
-    After=network.target
-
-    [Service]
-    # Replace with the user that should run the bot
-    User=your_user
-    Group=your_user
-
-    # Replace with the absolute path to the project directory
-    WorkingDirectory=/path/to/your/minecraft-server
-
-    # Replace with the absolute path to the python executable in your venv
-    ExecStart=/path/to/your/minecraft-server/.venv/bin/python main.py
-    
-    Restart=always
-    RestartSec=5
-
-    [Install]
-    WantedBy=multi-user.target
-    ```
+    **Important:** You must edit the copied content and replace the placeholder values (`your_user`, `/path/to/your/project`) with your actual username and the correct absolute paths.
 
 3.  **Enable and start the service:**
     ```bash
