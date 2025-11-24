@@ -51,13 +51,13 @@ class CommandService:
             logger.error(f"Op command validation failed for player '{player_name}': {e}")
             return False
 
-    async def stop(self) -> bool:
-        """Stops the server."""
+    async def stop_server(self) -> bool:
+        """Stops the server via RCON and cleans up the PID file."""
         try:
             command_model = StopCommand()
-            await self._execute_command(command_model)
-            logger.info("Server stopped successfully.")
-            return True
+            response = await self._execute_command(command_model)
+            self.msc.process_service.remove_pid_file()  # Clean up PID file after stopping
+            return bool(response)
         except ValidationError as e:
             logger.error(f"Failed to validate the stop command: {e}")
             return False

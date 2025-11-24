@@ -86,24 +86,22 @@ class MinecraftServerController:
         else: # not process_running and no pid file
             return ServerStatus.STOPPED # No process and no lingering PID file.
 
-    def start(self):
+    def start(self) -> bool:
         """Starts the Minecraft Server in a screen session."""
         if self.process_service.is_process_running():
             logger.warning(f"Server process is already running with PID {self.process_service.get_pid()}. "
                            f"Assuming server is already started.")
-            return
+            return False
 
         # Clean up old PID file if it exists from a previous crashed session
         if not self.process_service.is_process_running():
             self.process_service.remove_pid_file()
 
-        self.process_service.start_process(self.config.java_command)
-
-    def stop(self) -> bool:
-        """Stops the Minecraft server using an RCON command."""
-        response = self.run_server_command(ServerCommand.STOP.value)
-        self.process_service.remove_pid_file() # Clean up PID file after stopping
-        return bool(response)
+        try:
+            self.process_service.start_process(self.config.java_command)
+            return True
+        except Exception:
+            return False
 
     def run_server_command(self, command: str) -> bool | str:
         """Runs a command on the Minecraft server via RCON."""
